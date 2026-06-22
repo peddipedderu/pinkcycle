@@ -4,8 +4,17 @@ SECRET_KEY = '<your secret key>'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://accepting-statement-rarely-southeast.trycloudflare.com', 'https://*.hopto.org', 'http://localhost', 'http://127.0.0.1']
+ALLOWED_HOSTS = ['*', 'pinkcycle.co.ke', '102.220.168.51']
+CSRF_TRUSTED_ORIGINS = [
+    'https://accepting-statement-rarely-southeast.trycloudflare.com',
+    'https://*.hopto.org',
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://pinkcycle.co.ke',
+    'https://pinkcycle.co.ke',
+    'http://102.220.168.51',
+    'https://102.220.168.51'
+]
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'None'

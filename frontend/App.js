@@ -60,7 +60,9 @@ const PinkTheme = {
 const linking = {
   prefixes: [
     'http://localhost',
-    'http://102.220.169.172',
+    'http://102.220.168.51',
+    'http://pinkcycle.co.ke',
+    'https://pinkcycle.co.ke',
     'http://pinkcycle.hopto.org',
     window.location.origin,
   ],
