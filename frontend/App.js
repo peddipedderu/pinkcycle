@@ -26,6 +26,8 @@ import Donate from "./src/screens/shop/Donate";
 import RegForm from "./src/screens/drawer/regForm.js";
 import LoginForm from "./src/screens/drawer/loginForm.js";
 import Account from "./src/screens/drawer/Account";
+import ForgotPasswordForm from "./src/screens/drawer/forgotPasswordForm.js";
+import ResetPasswordForm from "./src/screens/drawer/resetPasswordForm.js";
 import Booking from "./src/screens/Booking";
 import SessionDetail from "./src/screens/SessionDetail";
 import BookSession from "./src/screens/BookSession";
@@ -48,12 +50,12 @@ const PinkTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#d63384',
-    background: '#fff1f5',
-    card: '#f8bbd0',
-    text: '#c2185b',
-    border: '#f8bbd0',
-    notification: '#f06292',
+    primary: '#ec4899',
+    background: '#fdf2f8',
+    card: '#fce7f3',
+    text: '#831843',
+    border: '#fbcfe8',
+    notification: '#f472b6',
   },
 };
 
@@ -106,6 +108,8 @@ const linking = {
       Registration: 'registration',
       Login: 'login',
       Account: 'account',
+      ForgotPassword: 'forgot_password',
+      ResetPassword: 'reset_password',
     },
   },
 };
@@ -159,7 +163,7 @@ const ShopTabNavigator = () => (
       else if (route.name === 'Payment') iconName = 'card';
       return <Ionicons name={iconName} size={size} color={color} />;
     },
-    tabBarActiveTintColor: '#d63384',
+    tabBarActiveTintColor: '#ec4899',
     tabBarInactiveTintColor: 'gray',
     headerShown: false,
   })}>
@@ -172,11 +176,11 @@ const ShopTabNavigator = () => (
 
 const MainStackNavigator = ({ navigation }) => (
   <Stack.Navigator screenOptions={{
-      headerStyle: { backgroundColor: '#f8bbd0' },
-      headerTintColor: '#c2185b',
+      headerStyle: { backgroundColor: '#fce7f3' },
+      headerTintColor: '#831843',
       headerRight: () => (
         <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={{ marginRight: 15 }}>
-          <Ionicons name="menu" size={32} color="#c2185b" />
+          <Ionicons name="menu" size={32} color="#831843" />
         </TouchableOpacity>
       )
   }}>
@@ -212,13 +216,15 @@ export default function App() {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           headerShown: false,
-          drawerStyle: { backgroundColor: '#fff1f5' },
-          drawerActiveTintColor: '#d63384',
+          drawerStyle: { backgroundColor: '#fdf2f8' },
+          drawerActiveTintColor: '#ec4899',
       }}>
         <Drawer.Screen name="Main" component={MainStackNavigator} />
         <Drawer.Screen name="Registration" component={RegForm} />
         <Drawer.Screen name="Login" component={LoginForm} />
         <Drawer.Screen name="Account" component={Account} />
+        <Drawer.Screen name="ForgotPassword" component={ForgotPasswordForm} />
+        <Drawer.Screen name="ResetPassword" component={ResetPasswordForm} />
       </Drawer.Navigator>
     </NavigationContainer>
   );

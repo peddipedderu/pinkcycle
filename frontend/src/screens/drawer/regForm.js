@@ -157,13 +157,11 @@ const RegForm = ({ navigation }) => {
   const handleSubmit = async (values) => {
     try {
       console.log('Attempting registration:', values);
-      // Backend expects username, email, password
-      // We map "Username / Email" field to both if it's an email, or just username
       const data = {
-        username: values.usernameOrEmail,
-        email: values.usernameOrEmail.includes('@') ? values.usernameOrEmail : `${values.usernameOrEmail}@example.com`,
+        username: values.username,
+        email: values.email,
         password: values.password,
-        full_name: values.fullName, // Even if backend doesn't use it yet
+        full_name: values.fullName,
       };
       await client.post('register/', data);
       
@@ -174,11 +172,11 @@ const RegForm = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Registration Error:', error);
-      let errorMsg = 'Registration failed.';
-      if (error.response?.data) {
-          errorMsg = Object.values(error.response.data).flat().join(' ');
+      if (Platform.OS === 'web') {
+          window.location.href = '/login';
+      } else {
+          navigation.navigate('Login');
       }
-      alert(errorMsg);
     }
   };
 
@@ -253,7 +251,7 @@ const RegForm = ({ navigation }) => {
             </Text>
 
             <Formik
-              initialValues={{ fullName: '', usernameOrEmail: '', password: '', confirmPassword: '' }}
+              initialValues={{ fullName: '', username: '', email: '', password: '', confirmPassword: '' }}
               onSubmit={handleSubmit}
               validationSchema={validationSchema}
             >
@@ -276,20 +274,38 @@ const RegForm = ({ navigation }) => {
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: currentTheme.labelColor }]}>Username / Email</Text>
+                    <Text style={[styles.label, { color: currentTheme.labelColor }]}>Username</Text>
                     <TextInput
                       style={[styles.textBox, { 
                         backgroundColor: currentTheme.inputBg, 
                         borderColor: currentTheme.inputBorder, 
                         color: currentTheme.inputText 
                       }]}
-                      value={values.usernameOrEmail}
+                      value={values.username}
                       placeholder='babu008'
                       placeholderTextColor={selectedThemeId === 'dark' ? '#94a3b8' : '#9ca3af'}
-                      onChangeText={handleChange('usernameOrEmail')}
+                      onChangeText={handleChange('username')}
                       autoCapitalize='none'
                     />
-                    {errors.usernameOrEmail && <Text style={styles.error}>{errors.usernameOrEmail}</Text>}
+                    {errors.username && <Text style={styles.error}>{errors.username}</Text>}
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: currentTheme.labelColor }]}>Email Address</Text>
+                    <TextInput
+                      style={[styles.textBox, { 
+                        backgroundColor: currentTheme.inputBg, 
+                        borderColor: currentTheme.inputBorder, 
+                        color: currentTheme.inputText 
+                      }]}
+                      value={values.email}
+                      placeholder='you@example.com'
+                      placeholderTextColor={selectedThemeId === 'dark' ? '#94a3b8' : '#9ca3af'}
+                      onChangeText={handleChange('email')}
+                      autoCapitalize='none'
+                      keyboardType='email-address'
+                    />
+                    {errors.email && <Text style={styles.error}>{errors.email}</Text>}
                   </View>
 
                   <View style={styles.rowContainer}>

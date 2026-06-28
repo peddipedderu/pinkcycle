@@ -12,29 +12,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import client from '../api/client';
 
 const SendMessage = ({ navigation }) => {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [subjects, setSubjects] = useState([]);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, []);
-
-  const fetchSubjects = async () => {
-    try {
-      const response = await fetch('/api/send_message/');
-      if (response.ok) {
-        const data = await response.json();
-        setSubjects(data.subjects);
-        if (data.subjects.length > 0) {
-          setForm(prev => ({ ...prev, subject: data.subjects[0] }));
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
-    }
-  };
+  const [form, setForm] = useState({ name: '', email: '', subject: 'General Inquiry', message: '' });
+  const subjects = ['General Inquiry', 'Feedback', 'Partnership', 'Support', 'Volunteer'];
 
   const handleSend = async () => {
     if (!form.name || !form.email || !form.message) {
@@ -44,29 +26,34 @@ const SendMessage = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch('/api/send_message/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const response = await client.post('message/', {
+        name: form.name,
+        email: form.email,
+        subject: form.subject,
+        body: form.message,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200 || response.status === 201) {
         if (Platform.OS === 'web') {
-          window.location.href = data.redirect_url || '/message_sent';
+          navigation.navigate('MessageReceived', {
+            data: {
+              status: 'success',
+              message: 'Your message has been successfully sent to PinkCycle. We will get back to you shortly!'
+            }
+          });
         } else {
           Alert.alert('Success', 'Message sent successfully!');
           navigation.navigate('Home');
         }
       } else {
-        const errorData = await response.json();
-        if (Platform.OS === 'web') alert('Failed to send message: ' + (errorData.detail || 'Unknown error'));
+        if (Platform.OS === 'web') alert('Failed to send message.');
         else Alert.alert('Error', 'Failed to send message.');
       }
     } catch (error) {
       console.error(error);
-      if (Platform.OS === 'web') alert('An error occurred.');
-      else Alert.alert('Error', 'An error occurred.');
+      const errMsg = error.response?.data?.detail || 'An error occurred.';
+      if (Platform.OS === 'web') alert(errMsg);
+      else Alert.alert('Error', errMsg);
     }
   };
 

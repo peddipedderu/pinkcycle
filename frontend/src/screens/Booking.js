@@ -93,24 +93,45 @@ const Booking = ({ route, navigation }) => {
     applyFilters(sessions, searchQuery, selectedCategory);
   }, [searchQuery, sessions]);
 
-  const renderSessionCard = (session) => (
-    <TouchableOpacity
-      key={session.id}
-      style={styles.card}
-      onPress={() => navigation.navigate('SessionDetail', { id: session.id })}
-    >
-      <View style={styles.cardImageContainer}>
-        {session.image ? (
-          <Image source={{ uri: session.image }} style={styles.cardImage} />
-        ) : (
-          <View style={styles.imagePlaceholder}>
-             <Ionicons name='calendar' size={40} color='#f8bbd0' />
+  const renderSessionCard = (session) => {
+    const getNormalizedImageUrl = (url) => {
+      if (!url) return null;
+      let cleanUrl = url;
+      if (url.includes('127.0.0.1:8000')) {
+        cleanUrl = url.replace('http://127.0.0.1:8000', '');
+      } else if (url.includes('localhost:8000')) {
+        cleanUrl = url.replace('http://localhost:8000', '');
+      }
+      
+      if (cleanUrl.startsWith('/') && typeof window !== 'undefined' && window.location) {
+        const port = window.location.port;
+        if (port && port !== '80' && port !== '443') {
+          return `${window.location.protocol}//${window.location.hostname}${cleanUrl}?v=2`;
+        }
+      }
+      return cleanUrl + '?v=2';
+    };
+
+    const sessionImageUrl = getNormalizedImageUrl(session.image);
+
+    return (
+      <TouchableOpacity
+        key={session.id}
+        style={styles.card}
+        onPress={() => navigation.navigate('SessionDetail', { id: session.id })}
+      >
+        <View style={styles.cardImageContainer}>
+          {sessionImageUrl ? (
+            <Image source={{ uri: sessionImageUrl }} style={styles.cardImage} />
+          ) : (
+            <View style={styles.imagePlaceholder}>
+               <Ionicons name='calendar' size={40} color='#f8bbd0' />
+            </View>
+          )}
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{session.category || 'General'}</Text>
           </View>
-        )}
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryBadgeText}>{session.category || 'General'}</Text>
         </View>
-      </View>
       
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>{session.title}</Text>
@@ -140,7 +161,8 @@ const Booking = ({ route, navigation }) => {
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

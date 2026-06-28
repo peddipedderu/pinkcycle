@@ -6,9 +6,9 @@ import client from "../../api/client";
 const { width } = Dimensions.get("window");
 
 const PaymentSuccess = ({ navigation, route }) => {
-  const { session_id } = route.params || {};
+  const { session_id, gateway, token } = route.params || {};
 
-  const [loading, setLoading] = useState(!!session_id);
+  const [loading, setLoading] = useState(!!session_id || gateway === "paypal");
   const [paymentDetails, setPaymentDetails] = useState(null);
   const [error, setError] = useState(null);
 
@@ -36,8 +36,25 @@ const PaymentSuccess = ({ navigation, route }) => {
         }
       };
       verifyPayment();
+    } else if (gateway === "paypal" && token) {
+      const capturePayment = async () => {
+        try {
+          setLoading(true);
+          const response = await client.post("payment/paypal/capture/", {
+            paypal_order_id: token
+          });
+          setPaymentDetails(response.data);
+          setError(null);
+        } catch (err) {
+          console.error("PayPal Capture error:", err);
+          setError(err.response?.data?.detail || "Failed to capture your PayPal payment.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      capturePayment();
     }
-  }, [session_id]);
+  }, [session_id, gateway, token]);
 
   useEffect(() => {
     if (!loading) {
@@ -78,7 +95,7 @@ const PaymentSuccess = ({ navigation, route }) => {
           <ActivityIndicator size="large" color="#d63384" />
           <Text style={[styles.title, { marginTop: 20, fontSize: 20 }]}>Verifying Payment...</Text>
           <Text style={styles.message}>
-            We are confirming your transaction details with Stripe. Please don't close this page.
+            We are confirming your transaction details. Please don't close this page.
           </Text>
         </View>
       </View>
@@ -112,6 +129,17 @@ const PaymentSuccess = ({ navigation, route }) => {
                   })
                   .catch(err => {
                     setError(err.response?.data?.detail || "Failed to verify your payment status.");
+                  })
+                  .finally(() => setLoading(false));
+              } else if (gateway === "paypal" && token) {
+                setLoading(true);
+                client.post("payment/paypal/capture/", { paypal_order_id: token })
+                  .then(response => {
+                    setPaymentDetails(response.data);
+                    setError(null);
+                  })
+                  .catch(err => {
+                    setError(err.response?.data?.detail || "Failed to capture your PayPal payment.");
                   })
                   .finally(() => setLoading(false));
               }

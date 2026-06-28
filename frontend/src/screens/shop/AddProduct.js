@@ -97,7 +97,7 @@ const AddProduct = ({ navigation }) => {
           </View>
       )}
 
-      <Text style={styles.label}>Price (€)</Text>
+      <Text style={styles.label}>Price (KES)</Text>
       <TextInput
         style={styles.input}
         keyboardType="numeric"

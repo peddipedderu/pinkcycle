@@ -61,7 +61,7 @@ const Orders = ({ navigation, route }) => {
 
   useEffect(() => {
     if (route.params?.fromCheckout && route.params?.amount) {
-      setCheckoutMessage(`Success! Your cart total of ${parseFloat(route.params.amount).toFixed(2)} € is ready for review.`);
+      setCheckoutMessage(`Success! Your cart total of ${parseFloat(route.params.amount).toFixed(2)} KES is ready for review.`);
       navigation.setParams({ fromCheckout: false });
     }
   }, [route.params]);
@@ -117,7 +117,7 @@ const Orders = ({ navigation, route }) => {
     <View style={styles.itemRow}>
       <Text style={styles.itemName}>{item.product}</Text>
       <Text style={styles.itemQty}>x{item.quantity}</Text>
-      <Text style={styles.itemPrice}>{parseFloat(item.price).toFixed(2)} €</Text>
+      <Text style={styles.itemPrice}>{parseFloat(item.price).toFixed(2)} KES</Text>
     </View>
   );
 
@@ -192,7 +192,7 @@ const Orders = ({ navigation, route }) => {
       <View style={styles.orderFooter}>
         <View style={styles.totalContainer}>
           <Text style={styles.totalLabel}>Total Amount:</Text>
-          <Text style={styles.totalValue}>{parseFloat(item.total_cost).toFixed(2)} €</Text>
+          <Text style={styles.totalValue}>{parseFloat(item.total_cost).toFixed(2)} KES</Text>
         </View>
       </View>
     </View>
@@ -255,11 +255,11 @@ const Orders = ({ navigation, route }) => {
             <View style={styles.totalInfo}>
               <View>
                 <Text style={styles.grandTotalLabel}>Grand Total (All Orders):</Text>
-                <Text style={styles.grandTotalValue}>{parseFloat(totals.grand_total).toFixed(2)} €</Text>
+                <Text style={styles.grandTotalValue}>{parseFloat(totals.grand_total).toFixed(2)} KES</Text>
               </View>
               {parseFloat(totals.unpaid_total) > 0 && (
                 <View style={styles.unpaidBadge}>
-                    <Text style={styles.unpaidBadgeText}>Unpaid: {parseFloat(totals.unpaid_total).toFixed(2)} €</Text>
+                    <Text style={styles.unpaidBadgeText}>Unpaid: {parseFloat(totals.unpaid_total).toFixed(2)} KES</Text>
                 </View>
               )}
             </View>
@@ -311,7 +311,7 @@ const Orders = ({ navigation, route }) => {
             
             <View style={styles.modalFooter}>
               <Text style={styles.modalTotalLabel}>Total:</Text>
-              <Text style={styles.modalTotalValue}>{parseFloat(selectedOrder?.total_cost || 0).toFixed(2)} €</Text>
+              <Text style={styles.modalTotalValue}>{parseFloat(selectedOrder?.total_cost || 0).toFixed(2)} KES</Text>
             </View>
           </View>
         </View>

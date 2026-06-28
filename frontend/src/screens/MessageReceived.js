@@ -9,27 +9,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const MessageReceived = ({ navigation }) => {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchConfirmation();
-  }, []);
-
-  const fetchConfirmation = async () => {
-    try {
-      const response = await fetch('/api/message/latest/');
-      if (response.ok) {
-        const json = await response.json();
-        setData(json);
-      }
-    } catch (error) {
-      console.error('Error fetching confirmation:', error);
-    } finally {
-      setLoading(false);
-    }
+const MessageReceived = ({ route, navigation }) => {
+  const data = route.params?.data || {
+    status: 'success',
+    message: 'Your message has been processed by our systems.'
   };
+
+  const loading = false;
 
   if (loading) {
     return (

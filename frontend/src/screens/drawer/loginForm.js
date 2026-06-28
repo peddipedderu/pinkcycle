@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   TextInput, 
   TouchableOpacity, 
@@ -26,8 +26,11 @@ const AbstractShapes = () => (
 );
 
 const LoginForm = ({ navigation, route }) => {
+  const [loginError, setLoginError] = useState('');
+
   const handleSubmit = async (values) => {
     try {
+      setLoginError('');
       console.log('Attempting login for:', values.username);
       const response = await client.post('login/', values);
       const { token } = response.data;
@@ -60,12 +63,16 @@ const LoginForm = ({ navigation, route }) => {
           }
         }
       } else {
-        alert('Login failed: No token received from server.');
+        setLoginError('Login failed: No token received from server.');
       }
     } catch (error) {
       console.error('Login Error:', error);
-      const msg = error.response?.data?.detail || 'Login failed. Please check your credentials.';
-      alert(msg);
+      const msg = error.response?.data?.detail || error.message || '';
+      if (msg.toLowerCase().includes('credential') || msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('not found')) {
+        setLoginError('Username or password incorrect');
+      } else {
+        setLoginError(msg || 'Username or password incorrect');
+      }
     }
   };
 
@@ -102,7 +109,7 @@ const LoginForm = ({ navigation, route }) => {
               {({ handleChange, handleSubmit, values, errors }) => (
                 <View style={styles.formContainer}>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Username / Email</Text>
+                    <Text style={styles.label}>Username</Text>
                     <TextInput
                       style={styles.textBox}
                       value={values.username}
@@ -128,10 +135,25 @@ const LoginForm = ({ navigation, route }) => {
                     </View>
                     {errors.password && <Text style={styles.error}>{errors.password}</Text>}
                     
-                    <TouchableOpacity style={styles.forgotPassword}>
+                    <TouchableOpacity 
+                      style={styles.forgotPassword}
+                      onPress={() => {
+                        if (Platform.OS === 'web') {
+                          window.location.href = '/forgot_password';
+                        } else {
+                          navigation.navigate('ForgotPassword');
+                        }
+                      }}
+                    >
                       <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {loginError ? (
+                    <Text style={[styles.error, { textAlign: 'center', marginBottom: 12, marginTop: 4, fontWeight: '600', fontSize: 13 }]}>
+                      {loginError}
+                    </Text>
+                  ) : null}
 
                   <TouchableOpacity style={styles.addButton} onPress={handleSubmit}>
                     <Text style={styles.buttonText}>Submit</Text>

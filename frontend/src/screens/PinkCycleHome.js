@@ -13,29 +13,93 @@ import {
   Animated,
 } from "react-native";
 import { MaterialCommunityIcons, FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
-const FadeInView = ({ children, delay = 0, duration = 800, style }) => {
+// ─── 3D PINKY DESIGN SYSTEM ─────────────────────────────────────────────────
+const PINK = {
+  50: '#fdf2f8',
+  100: '#fce7f3',
+  200: '#fbcfe8',
+  300: '#f9a8d4',
+  400: '#f472b6',
+  500: '#ec4899',
+  600: '#db2777',
+  700: '#be185d',
+  800: '#9d174d',
+  900: '#831843',
+  950: '#500724',
+  glow: 'rgba(236, 72, 153, 0.4)',
+  glowStrong: 'rgba(236, 72, 153, 0.7)',
+  glass: 'rgba(253, 242, 248, 0.85)',
+  glassDark: 'rgba(80, 7, 36, 0.75)',
+  gradient1: '#ec4899',
+  gradient2: '#db2777',
+  gradient3: '#be185d',
+  neon: '#ff6eb4',
+};
+
+// ─── 3D FLOATING ORB ANIMATION ──────────────────────────────────────────────
+const FloatingOrb = ({ size, color, top, left, delay = 0 }) => {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(opacityAnim, {
+      toValue: 0.6,
+      duration: 1500,
+      delay,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: -20, duration: 3000 + delay, useNativeDriver: true }),
+        Animated.timing(floatAnim, { toValue: 20, duration: 3000 + delay, useNativeDriver: true }),
+      ])
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.15, duration: 4000, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 0.85, duration: 4000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        top,
+        left,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+        opacity: opacityAnim,
+        transform: [{ translateY: floatAnim }, { scale: scaleAnim }],
+        ...(Platform.OS === 'web' ? { filter: `blur(${size * 0.3}px)` } : {}),
+      }}
+    />
+  );
+};
+
+// ─── 3D CARD WITH PERSPECTIVE ───────────────────────────────────────────────
+const Card3D = ({ children, style, delay = 0 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: duration,
-        delay: delay,
-        useNativeDriver: true,
-      }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 900, delay, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 8, delay, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 7, delay, useNativeDriver: true }),
     ]).start();
-  }, [fadeAnim, slideAnim, delay, duration]);
+  }, []);
 
   return (
     <Animated.View
@@ -43,7 +107,11 @@ const FadeInView = ({ children, delay = 0, duration = 800, style }) => {
         style,
         {
           opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
+          transform: [
+            { translateY: slideAnim },
+            { scale: scaleAnim },
+            ...(Platform.OS === 'web' ? [{ perspective: 1200 }] : []),
+          ],
         },
       ]}
     >
@@ -52,7 +120,26 @@ const FadeInView = ({ children, delay = 0, duration = 800, style }) => {
   );
 };
 
+// ─── FADE-IN WITH 3D SLIDE ─────────────────────────────────────────────────
+const FadeInView = ({ children, delay = 0, duration = 800, style }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration, delay, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 8, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={[style, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      {children}
+    </Animated.View>
+  );
+};
+
+// ─── DYNAMIC BACKGROUND WITH CROSSFADE ──────────────────────────────────────
 const DynamicBackground = ({ images }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [nextIndex, setNextIndex] = useState(1);
@@ -62,17 +149,13 @@ const DynamicBackground = ({ images }) => {
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(scaleAnim, { toValue: 1.1, duration: 20000, useNativeDriver: true }),
-        Animated.timing(scaleAnim, { toValue: 1, duration: 20000, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1.15, duration: 25000, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 25000, useNativeDriver: true }),
       ])
     ).start();
 
     const timer = setInterval(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      }).start(() => {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 3000, useNativeDriver: true }).start(() => {
         setCurrentIndex(nextIndex);
         setNextIndex((nextIndex + 1) % images.length);
         fadeAnim.setValue(0);
@@ -83,54 +166,111 @@ const DynamicBackground = ({ images }) => {
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Animated.Image 
-        source={images[currentIndex]} 
-        style={[styles.heroImage, { transform: [{ scale: scaleAnim }] }]} 
-        resizeMode="cover" 
+      <Animated.Image source={images[currentIndex]} style={[styles.heroImage, { transform: [{ scale: scaleAnim }] }]} resizeMode="cover" />
+      <Animated.Image source={images[nextIndex]} style={[styles.heroImage, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]} resizeMode="cover" />
+      {/* 3D Gradient overlay */}
+      <LinearGradient
+        colors={['rgba(80,7,36,0.3)', 'rgba(157,23,77,0.5)', 'rgba(219,39,119,0.4)', 'rgba(236,72,153,0.3)']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       />
-      <Animated.Image
-        source={images[nextIndex]}
-        style={[styles.heroImage, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}
-        resizeMode="cover" 
+      {/* Deep dark overlay at bottom for text readability */}
+      <LinearGradient
+        colors={['transparent', 'rgba(80,7,36,0.85)']}
+        style={[StyleSheet.absoluteFill]}
+        start={{ x: 0, y: 0.3 }}
+        end={{ x: 0, y: 1 }}
       />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.4)" }]} />
     </View>
   );
 };
 
-const ImpactStat = ({ count, label, duration = 2000 }) => {
+// ─── ANIMATED COUNTER WITH GLOW ─────────────────────────────────────────────
+const ImpactStat = ({ count, label, icon, duration = 2000 }) => {
   const [displayCount, setDisplayCount] = useState(0);
-  const target = parseInt(count.replace(/[^0-9]/g, ''));
+  const target = parseInt(count.replace(/[^0-9]/g, '')) || 0;
   const suffix = count.replace(/[0-9]/g, '');
+  const glowAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
-    let start = 0;
-    const end = target;
-    if (start === end) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.5, duration: 2000, useNativeDriver: true }),
+      ])
+    ).start();
 
-    let totalMiliseconds = duration;
-    let incrementTime = Math.max(totalMiliseconds / end, 10);
+    let startTime = null;
+    let animationFrameId = null;
 
-    let timer = setInterval(() => {
-      start += Math.ceil(end / (duration / 50)); // Smoother for large numbers
-      if (start >= end) {
-        start = end;
-        clearInterval(timer);
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const rate = Math.min(progress / duration, 1);
+      
+      setDisplayCount(Math.floor(rate * target));
+
+      if (rate < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setDisplayCount(target);
       }
-      setDisplayCount(start);
-    }, 50);
+    };
 
-    return () => clearInterval(timer);
-  }, [target]);
+    animationFrameId = requestAnimationFrame(animate);
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [target, duration]);
 
   return (
-    <View style={styles.statBox}>
-      <Text style={styles.statCount}>{displayCount}{suffix}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    <Card3D style={styles.statBox3D}>
+      <Animated.View style={[styles.statGlowRing, { opacity: glowAnim }]} />
+      <MaterialCommunityIcons name={icon} size={28} color={PINK.neon} style={{ marginBottom: 8 }} />
+      <Text style={styles.statCount3D}>{displayCount}{suffix}</Text>
+      <Text style={styles.statLabel3D}>{label}</Text>
+    </Card3D>
   );
 };
 
+
+// ─── 3D PILLAR CARD ─────────────────────────────────────────────────────────
+const PillarCard3D = ({ icon, title, color, description, delay, onPress }) => {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 8, delay, useNativeDriver: true }).start();
+  }, []);
+
+  return (
+    <Animated.View style={[styles.pillarCardWrapper, { transform: [{ scale: scaleAnim }] }]}>
+      <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.pillarCard3D}>
+        <LinearGradient
+          colors={[color + '15', color + '08', 'rgba(253,242,248,0.95)']}
+          style={styles.pillarGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={[styles.pillarIconWrap, { backgroundColor: color + '20', borderColor: color + '40' }]}>
+            <MaterialCommunityIcons name={icon} size={36} color={color} />
+          </View>
+          <Text style={[styles.pillarTitle3D, { color }]}>{title}</Text>
+          <Text style={styles.pillarDesc3D}>{description}</Text>
+          <View style={[styles.pillarArrow, { backgroundColor: color + '15' }]}>
+            <Ionicons name="arrow-forward" size={18} color={color} />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 const PinkCycleHome = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState('Home');
   const scrollRef = useRef(null);
@@ -158,44 +298,15 @@ const PinkCycleHome = ({ navigation, route }) => {
   const handleBookSession = () => {
     if (Platform.OS === 'web') {
       const token = localStorage.getItem('userToken');
-      if (token) {
-        navigation.navigate('Booking');
-      } else {
-        navigation.navigate('Registration');
-      }
-    } else {
-      navigation.navigate('Registration');
-    }
+      if (token) { navigation.navigate('Booking'); } else { navigation.navigate('Registration'); }
+    } else { navigation.navigate('Registration'); }
   };
 
-  const QuickLink = ({ icon, title, color, delay }) => (
-    <FadeInView delay={delay} style={styles.quickLinkWrapper}>
-      <TouchableOpacity style={[styles.quickLinkBlock, { borderColor: color + '40' }]}>
-        <View style={[styles.quickLinkIcon, { backgroundColor: color + '15' }]}>
-          <MaterialCommunityIcons name={icon} size={34} color={color} />
-        </View>
-        <Text style={[styles.quickLinkTitle, { color: color }]}>{title}</Text>
-      </TouchableOpacity>
-    </FadeInView>
-  );
-
-  const ProgramCard = ({ title, overview, impact, icon, delay, navigation }) => (
-    <FadeInView delay={delay} style={{ width: '100%' }}>
-      <View style={styles.programCard}>
-        <View style={styles.programHeader}>
-          <MaterialCommunityIcons name={icon} size={32} color="#db2777" />
-          <Text style={styles.programTitle}>{title}</Text>
-        </View>
-        <Text style={styles.programOverview}>{overview}</Text>
-        <View style={styles.programImpactBadge}>
-          <Text style={styles.programImpactText}>IMPACT: {impact}</Text>
-        </View>
-        <TouchableOpacity style={styles.programButton} onPress={() => navigation.navigate("Programs", { programTitle: title })} >
-          <Text style={styles.programButtonText}>Explore Program</Text>
-        </TouchableOpacity>
-      </View>
-    </FadeInView>
-  );
+  const scrollToSection = (section) => {
+    if (scrollRef.current && sectionRefs[section]) {
+      scrollRef.current.scrollTo({ y: sectionRefs[section].current, animated: true });
+    }
+  };
 
   const youthImages = [
     require('../../assets/youth.jpeg'),
@@ -213,190 +324,341 @@ const PinkCycleHome = ({ navigation, route }) => {
     require('../../assets/youth12.jpeg'),
   ];
 
-  const scrollToSection = (section) => {
-     if (scrollRef.current && sectionRefs[section]) {
-        scrollRef.current.scrollTo({ y: sectionRefs[section].current, animated: true });
-     }
-  };
+  // ─── PROGRAM CARD WITH 3D TILT ─────────────────────────────────────────
+  const ProgramCard3D = ({ title, overview, impact, icon, delay }) => (
+    <Card3D delay={delay} style={{ width: '100%' }}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate("Programs", { programTitle: title })}
+        style={styles.programCard3D}
+      >
+        <LinearGradient
+          colors={['rgba(253,242,248,0.98)', 'rgba(252,231,243,0.95)', '#fff']}
+          style={styles.programCardInner}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.programIconCircle}>
+            <LinearGradient
+              colors={[PINK[500], PINK[700]]}
+              style={styles.programIconGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <MaterialCommunityIcons name={icon} size={28} color="#fff" />
+            </LinearGradient>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.programTitle3D}>{title}</Text>
+            <Text style={styles.programOverview3D}>{overview}</Text>
+            <View style={styles.programImpactBadge3D}>
+              <Ionicons name="sparkles" size={14} color={PINK[600]} />
+              <Text style={styles.programImpactText3D}>{impact}</Text>
+            </View>
+          </View>
+          <View style={styles.programArrow3D}>
+            <Ionicons name="chevron-forward" size={22} color={PINK[500]} />
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Card3D>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Navigation Header */}
-      <View style={styles.navHeader}>
-        <Text style={styles.logoText}>Pink Cycle <Text style={styles.logoAccent}>EmpowerHer</Text></Text>
+      {/* ═══ GLASSMORPHIC NAVIGATION ═══ */}
+      <View style={styles.navHeader3D}>
+        <View style={styles.logoContainer}>
+          <LinearGradient
+            colors={[PINK[500], PINK[700]]}
+            style={styles.logoBadge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Text style={styles.logoBadgeText}>PC</Text>
+          </LinearGradient>
+          <View>
+            <Text style={styles.logoText3D}>Pink Cycle</Text>
+            <Text style={styles.logoSubtext}>EmpowerHer</Text>
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
           {Platform.OS === 'web' && width > 800 && (
-            <View style={styles.webNav}>
-               <TouchableOpacity onPress={() => scrollRef.current.scrollTo({y: 0, animated: true})}><Text style={styles.webNavLink}>Home</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => scrollToSection('about')}><Text style={styles.webNavLink}>About</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => scrollToSection('pillars')}><Text style={styles.webNavLink}>Pillars</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => scrollToSection('catalog')}><Text style={styles.webNavLink}>Catalog</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => navigation.navigate('Programs')}><Text style={styles.webNavLink}>Programs</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } else { scrollToSection('difference'); } }}><Text style={styles.webNavLink}>Impact</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => scrollToSection('contact')}><Text style={styles.webNavLink}>Contact</Text></TouchableOpacity>
-               <TouchableOpacity onPress={() => navigation.navigate('Account')}><Text style={styles.webNavLink}>Account</Text></TouchableOpacity>
-               <TouchableOpacity onPress={handleBookSession} style={[styles.heroPrimaryBtn, { paddingVertical: 8, paddingHorizontal: 15, marginLeft: 10 }]}><Text style={[styles.heroPrimaryBtnText, { fontSize: 12 }]}>Book Session</Text></TouchableOpacity>
+            <View style={styles.webNav3D}>
+              {[
+                { label: 'Home', action: () => scrollRef.current.scrollTo({ y: 0, animated: true }) },
+                { label: 'About', action: () => scrollToSection('about') },
+                { label: 'Pillars', action: () => scrollToSection('pillars') },
+                { label: 'Catalog', action: () => scrollToSection('catalog') },
+                { label: 'Programs', action: () => navigation.navigate('Programs') },
+                { label: 'Impact', action: () => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } else { scrollToSection('difference'); } } },
+                { label: 'Contact', action: () => scrollToSection('contact') },
+                { label: 'Account', action: () => navigation.navigate('Account') },
+              ].map((item) => (
+                <TouchableOpacity key={item.label} onPress={item.action} style={styles.navLinkWrap}>
+                  <Text style={styles.webNavLink3D}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={handleBookSession} style={styles.navCTA3D}>
+                <LinearGradient
+                  colors={[PINK[500], PINK[700]]}
+                  style={styles.navCTAGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.navCTAText}>Book Session</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           )}
-          <TouchableOpacity onPress={() => navigation.toggleDrawer()}>
-            <Ionicons name="menu" size={32} color="#831843" />
+          <TouchableOpacity onPress={() => navigation.toggleDrawer()} style={styles.menuBtn3D}>
+            <Ionicons name="menu" size={28} color={PINK[700]} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container}>
-        {/* 1. Hero Banner */}
-        <View style={styles.heroSection}>
+      <ScrollView ref={scrollRef} style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* ═══ 1. 3D HERO SECTION ═══ */}
+        <View style={styles.heroSection3D}>
           <DynamicBackground images={[require("../../assets/pink.jpeg"), ...youthImages]} />
-          <View style={styles.heroOverlay}>
+          {/* Floating 3D orbs */}
+          <FloatingOrb size={120} color={PINK.glow} top="10%" left="5%" delay={0} />
+          <FloatingOrb size={80} color={PINK.glowStrong} top="60%" left="80%" delay={500} />
+          <FloatingOrb size={60} color="rgba(244,114,182,0.4)" top="30%" left="70%" delay={1000} />
+          <FloatingOrb size={100} color="rgba(251,207,232,0.3)" top="75%" left="15%" delay={1500} />
+
+          <View style={styles.heroOverlay3D}>
             <FadeInView delay={200}>
-              <Text style={styles.heroTagline}>EMPOWERING WOMEN AND GIRLS</Text>
+              <View style={styles.heroTaglineBadge}>
+                <View style={styles.heroTaglineDot} />
+                <Text style={styles.heroTagline3D}>EMPOWERING WOMEN AND GIRLS</Text>
+              </View>
             </FadeInView>
             <FadeInView delay={400}>
-              <Text style={styles.heroTitle}>Breaking Barriers.{"\n"}Empowering Futures.</Text>
+              <Text style={styles.heroTitle3D}>Breaking{"\n"}Barriers.{"\n"}<Text style={styles.heroTitleAccent}>Empowering{"\n"}Futures.</Text></Text>
             </FadeInView>
-            <FadeInView delay={600} style={styles.heroButtons}>
-              <TouchableOpacity style={styles.heroPrimaryBtn} onPress={handleBookSession}>
-                <Text style={styles.heroPrimaryBtnText}>Book Session</Text>
+            <FadeInView delay={600}>
+              <Text style={styles.heroSubtitle3D}>Menstrual health education, digital literacy, and climate-conscious solutions for every girl in Kenya.</Text>
+            </FadeInView>
+            <FadeInView delay={800} style={styles.heroButtons3D}>
+              <TouchableOpacity onPress={handleBookSession}>
+                <LinearGradient
+                  colors={[PINK[500], PINK[700]]}
+                  style={styles.heroPrimaryBtn3D}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name="calendar" size={18} color="#fff" />
+                  <Text style={styles.heroPrimaryBtnText3D}>Book Session</Text>
+                </LinearGradient>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.heroPrimaryBtn} onPress={() => navigation.navigate('JoinUs')}>
-                <Text style={styles.heroPrimaryBtnText}>Join Us</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('JoinUs')}>
+                <LinearGradient
+                  colors={[PINK[500], PINK[700]]}
+                  style={styles.heroPrimaryBtn3D}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name="people" size={18} color="#fff" />
+                  <Text style={styles.heroPrimaryBtnText3D}>Join Us</Text>
+                </LinearGradient>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.heroPrimaryBtn} onPress={() => navigation.navigate('Shop')}>
-                <Text style={styles.heroPrimaryBtnText}>Visit Our Community Shop</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Shop')} style={styles.heroGlassBtn3D}>
+                <Ionicons name="storefront" size={18} color="#fff" />
+                <Text style={styles.heroGlassBtnText3D}>Community Shop</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.heroSecondaryBtn} onPress={() => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } else { scrollToSection('difference'); } }}>
-                <Text style={styles.heroSecondaryBtnText}>Donate</Text>
+              <TouchableOpacity onPress={() => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } else { scrollToSection('difference'); } }} style={styles.heroGlassBtn3D}>
+                <Ionicons name="heart" size={18} color={PINK.neon} />
+                <Text style={styles.heroGlassBtnText3D}>Donate</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.heroSecondaryBtn} onPress={() => navigation.navigate('Blogs')}>
-                <Text style={styles.heroSecondaryBtnText}>Read Blog</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Blogs')} style={styles.heroGlassBtn3D}>
+                <Ionicons name="book" size={18} color="#fff" />
+                <Text style={styles.heroGlassBtnText3D}>Read Blog</Text>
               </TouchableOpacity>
             </FadeInView>
-            <FadeInView delay={800}>
-              <TouchableOpacity style={styles.heroGhostBtn} onPress={() => scrollToSection('programs')}>
-                <Text style={styles.heroGhostBtnText}>Explore Programs →</Text>
+            <FadeInView delay={1000}>
+              <TouchableOpacity onPress={() => scrollToSection('programs')} style={styles.heroExplore3D}>
+                <Text style={styles.heroExploreText3D}>Explore Programs</Text>
+                <Ionicons name="arrow-down" size={18} color={PINK[300]} />
               </TouchableOpacity>
             </FadeInView>
           </View>
         </View>
 
-        {/* Impact Highlights Bar */}
-        <FadeInView delay={1000} style={styles.impactBar}>
-          <ImpactStat count="500+" label="Youth Trained" />
-          <ImpactStat count="200+" label="Girls Empowered" />
-          <ImpactStat count="10+" label="Events" />
-        </FadeInView>
+        {/* ═══ IMPACT BAR WITH 3D STATS ═══ */}
+        <LinearGradient
+          colors={[PINK[950], PINK[900], PINK[800]]}
+          style={styles.impactBar3D}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        >
+          <ImpactStat count="500+" label="Youth Trained" icon="school" />
+          <ImpactStat count="200+" label="Girls Empowered" icon="account-heart" />
+          <ImpactStat count="10+" label="Events" icon="calendar-star" />
+        </LinearGradient>
 
-        {/* 2. Strategic Pillars */}
-        <View style={styles.section} onLayout={onSectionLayout('pillars')}>
+        {/* ═══ 2. STRATEGIC PILLARS ═══ */}
+        <View style={styles.section3D} onLayout={onSectionLayout('pillars')}>
           <FadeInView>
-            <Text style={styles.sectionTitleCenter}>Strategic Pillars</Text>
+            <Text style={styles.sectionTag3D}>OUR FOCUS</Text>
+            <Text style={styles.sectionTitle3D}>Strategic Pillars</Text>
+            <Text style={styles.sectionSubtitle3D}>Four pillars driving our mission to empower every girl and youth</Text>
           </FadeInView>
-          <View style={styles.pillarsGrid}>
-            <QuickLink icon="laptop" title="Digital Literacy" color="#db2777" delay={200} />
-            <QuickLink icon="water" title="Menstrual Health" color="#be185d" delay={400} />
-            <QuickLink icon="leaf" title="Climate Action" color="#15803d" delay={600} />
-            <QuickLink icon="account-group" title="Mentorship" color="#0369a1" delay={800} />
+          <View style={styles.pillarsGrid3D}>
+            <PillarCard3D icon="laptop" title="Digital Literacy" color={PINK[600]} description="Coding, AI, and cybersecurity skills for youth 15–25" delay={200} />
+            <PillarCard3D icon="water" title="Menstrual Health" color={PINK[700]} description="Breaking taboos through education and dignity kits" delay={400} />
+            <PillarCard3D icon="leaf" title="Climate Action" color="#15803d" description="Tree planting, recycling, and green entrepreneurship" delay={600} />
+            <PillarCard3D icon="account-group" title="Mentorship" color="#7c3aed" description="One-on-one guidance from industry professionals" delay={800} />
           </View>
         </View>
 
-        {/* 3. About Us */}
-        <View style={[styles.section, { backgroundColor: '#fdf2f8' }]} onLayout={onSectionLayout('about')}>
+        {/* ═══ 3. ABOUT US ═══ */}
+        <LinearGradient
+          colors={[PINK[50], '#fff', PINK[50]]}
+          style={styles.section3D}
+          onLayout={onSectionLayout('about')}
+        >
           <FadeInView>
-            <Text style={styles.sectionTitle}>About Pink Cycle</Text>
+            <Text style={styles.sectionTag3D}>WHO WE ARE</Text>
+            <Text style={styles.sectionTitle3D}>About Pink Cycle</Text>
           </FadeInView>
-          <View style={styles.missionVisionBox}>
-            <FadeInView delay={200} style={styles.mvItem}>
-              <Text style={styles.mvLabel}>OUR MISSION</Text>
-              <Text style={styles.mvText}>Empower women and youth through menstrual health education, digital literacy, and climate-conscious solutions.</Text>
-            </FadeInView>
-            <FadeInView delay={400} style={styles.mvItem}>
-              <Text style={styles.mvLabel}>OUR VISION</Text>
-              <Text style={styles.mvText}>A society where every girl has dignity, opportunity, and access to education.</Text>
-            </FadeInView>
+
+          <View style={styles.missionVisionGrid}>
+            <Card3D delay={200} style={styles.mvCardWrap}>
+              <LinearGradient
+                colors={[PINK[500], PINK[700]]}
+                style={styles.mvCard3D}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="rocket" size={32} color="#fff" />
+                <Text style={styles.mvLabel3D}>OUR MISSION</Text>
+                <Text style={styles.mvText3D}>Empower women and youth through menstrual health education, digital literacy, and climate-conscious solutions.</Text>
+              </LinearGradient>
+            </Card3D>
+            <Card3D delay={400} style={styles.mvCardWrap}>
+              <View style={styles.mvCardOutline3D}>
+                <Ionicons name="eye" size={32} color={PINK[600]} />
+                <Text style={[styles.mvLabel3D, { color: PINK[600] }]}>OUR VISION</Text>
+                <Text style={[styles.mvText3D, { color: PINK[800] }]}>A society where every girl has dignity, opportunity, and access to education.</Text>
+              </View>
+            </Card3D>
           </View>
 
-          <FadeInView delay={600} style={styles.founderSection}>
-            <View style={styles.founderImagesRow}>
-              <Image
-                source={require('../../assets/logo.jpeg')}
-                style={styles.sideFounderImage}
-              />
-              <Image
-                source={require('../../assets/Karen.png')}
-                style={styles.mainFounderImage}
-              />
-              <Image
-                source={require('../../assets/founder.jpeg')}
-                style={styles.sideFounderImage}
-              />
+          <Card3D delay={600} style={styles.founderSection3D}>
+            <View style={styles.founderGlass3D}>
+              <View style={styles.founderImagesRow3D}>
+                <View style={styles.sideImageWrap3D}>
+                  <Image source={require('../../assets/logo.jpeg')} style={styles.sideFounderImage3D} />
+                </View>
+                <View style={styles.mainImageWrap3D}>
+                  <LinearGradient
+                    colors={[PINK[400], PINK[600], PINK[800]]}
+                    style={styles.mainImageBorder3D}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Image source={require('../../assets/Karen.png')} style={styles.mainFounderImage3D} />
+                  </LinearGradient>
+                </View>
+                <View style={styles.sideImageWrap3D}>
+                  <Image source={require('../../assets/founder.jpeg')} style={styles.sideFounderImage3D} />
+                </View>
+              </View>
+              <Text style={styles.founderTitle3D}>Founder's Message</Text>
+              <Text style={styles.founderQuote3D}>
+                "In my community, I grew up seeing girls and young people held back not because they lacked talent, but because they lacked access... That is why I founded Pink Cycle EmpowerHer Initiative — to break the silence, to open doors, and to show that every girl and youth deserves dignity, knowledge, and opportunity."
+              </Text>
+              <Text style={styles.founderName3D}>Miss Caren</Text>
+              <Text style={styles.founderRole3D}>Founder & Executive Director</Text>
             </View>
-            <Text style={styles.founderTitle}>Founder’s Message</Text>
-            <Text style={styles.founderQuote}>
-              "In my community, I grew up seeing girls and young people held back not because they lacked talent, but because they lacked access... That is why I founded Pink Cycle EmpowerHer Initiative — to break the silence, to open doors, and to show that every girl and youth deserves dignity, knowledge, and opportunity."
-            </Text>
-            <Text style={styles.founderName}>Miss Caren</Text>
-            <Text style={styles.founderRole}>Founder & Executive Director</Text>
-          </FadeInView>
+          </Card3D>
 
-          <View style={styles.valuesContainer}>
+          <View style={styles.valuesContainer3D}>
             {['Inclusivity', 'Sustainability', 'Empowerment', 'Innovation'].map((val, idx) => (
-              <FadeInView key={val} delay={800 + (idx * 100)} style={styles.valueBadge}>
-                <Text style={styles.valueText}>{val}</Text>
+              <FadeInView key={val} delay={800 + (idx * 150)} style={styles.valueBadge3D}>
+                <LinearGradient
+                  colors={[PINK[500], PINK[700]]}
+                  style={styles.valueBadgeGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.valueText3D}>{val}</Text>
+                </LinearGradient>
               </FadeInView>
             ))}
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* 4. Youth Empowerment Catalog */}
-        <View style={[styles.section, { backgroundColor: '#1a0614' }]} onLayout={onSectionLayout('catalog')}>
+        {/* ═══ 4. YOUTH CATALOG ═══ */}
+        <LinearGradient
+          colors={[PINK[950], '#0f0515', '#1a0614']}
+          style={[styles.section3D, { paddingBottom: 60 }]}
+          onLayout={onSectionLayout('catalog')}
+        >
+          {/* Background orbs for the dark section */}
+          <FloatingOrb size={150} color="rgba(236,72,153,0.15)" top="10%" left="80%" delay={200} />
+          <FloatingOrb size={100} color="rgba(190,24,93,0.1)" top="50%" left="5%" delay={600} />
+
           <FadeInView>
-            <Text style={[styles.sectionTitle, { color: '#fce7f3', textAlign: 'center' }]}>Youth Empowerment Catalog</Text>
-            <Text style={styles.catalogSubtitle}>Showcasing the vibrant future of our community</Text>
+            <Text style={[styles.sectionTag3D, { color: PINK[400] }]}>GALLERY</Text>
+            <Text style={[styles.sectionTitle3D, { color: PINK[100] }]}>Youth Empowerment Catalog</Text>
+            <Text style={styles.catalogSubtitle3D}>Showcasing the vibrant future of our community</Text>
           </FadeInView>
-          <ScrollView
-            horizontal={true}
-            showsHorizontalScrollIndicator={true}
-            contentContainerStyle={styles.scrollContainer}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContainer3D}>
             {youthImages.map((img, index) => (
-              <FadeInView key={index} delay={index * 100} style={styles.youthCard}>
-                <Image source={img} style={styles.catalogImage} resizeMode="cover" />
-                <View style={styles.youthBadge}>
-                   <Text style={styles.youthBadgeText}>Future Leader</Text>
+              <Card3D key={index} delay={index * 120} style={styles.youthCard3D}>
+                <Image source={img} style={styles.catalogImage3D} resizeMode="cover" />
+                <LinearGradient
+                  colors={['transparent', 'rgba(80,7,36,0.9)']}
+                  style={styles.youthCardOverlay}
+                  start={{ x: 0, y: 0.4 }}
+                  end={{ x: 0, y: 1 }}
+                />
+                <View style={styles.youthBadge3D}>
+                  <LinearGradient
+                    colors={[PINK[500], PINK[700]]}
+                    style={styles.youthBadgeGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                  >
+                    <Ionicons name="sparkles" size={12} color="#fff" />
+                    <Text style={styles.youthBadgeText3D}>Future Leader</Text>
+                  </LinearGradient>
                 </View>
-              </FadeInView>
+              </Card3D>
             ))}
           </ScrollView>
-        </View>
+        </LinearGradient>
 
-        {/* 5. Programs & Initiatives */}
-        <View style={styles.section} onLayout={onSectionLayout('programs')}>
+        {/* ═══ 5. PROGRAMS ═══ */}
+        <View style={styles.section3D} onLayout={onSectionLayout('programs')}>
           <FadeInView>
-            <Text style={styles.sectionTitle}>Programs & Initiatives</Text>
+            <Text style={styles.sectionTag3D}>WHAT WE DO</Text>
+            <Text style={styles.sectionTitle3D}>Programs & Initiatives</Text>
           </FadeInView>
-          <ProgramCard navigation={navigation}
+          <ProgramCard3D
             title="Digital Literacy & ICT Skills"
             overview="Equipping youth aged 15–25 with coding (Python, HTML, CSS), AI integration, and cybersecurity."
             impact="Over 500 girls in Bungoma have already benefited."
             icon="code-braces"
             delay={200}
           />
-          <ProgramCard navigation={navigation}
+          <ProgramCard3D
             title="Menstrual Health & Hygiene"
             overview="Breaking taboos through school visits and distribution of dignity kits (pads, soap, underwear)."
             impact="Reduced absenteeism and stigma in local schools."
             icon="heart-pulse"
             delay={400}
           />
-          <ProgramCard navigation={navigation}
+          <ProgramCard3D
             title="Climate-Conscious Solutions"
             overview="Tree planting, recycling training, and green entrepreneurship for a sustainable future."
             impact="Promotes environmental stewardship among youth."
             icon="sprout"
             delay={600}
           />
-          <ProgramCard navigation={navigation}
+          <ProgramCard3D
             title="Mentorship & Leadership"
             overview="One-on-one sessions with professionals to build confidence and innovation capacity."
             impact="Nurtures the next generation of confident leaders."
@@ -405,607 +667,424 @@ const PinkCycleHome = ({ navigation, route }) => {
           />
         </View>
 
-        {/* 6. Upcoming Events */}
-        <View style={styles.section}>
-          <FadeInView style={styles.eventCard}>
-            <Text style={styles.eventTag}>UPCOMING EVENT</Text>
-            <Text style={styles.eventTitle}>Youth Empowerment Program 2026</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Ionicons name="calendar" size={16} color="#db2777" />
-              <Text style={{ fontSize: 16, color: '#831843', fontWeight: '600', marginLeft: 10 }}>June 1st – June 30th, 2026</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Ionicons name="location" size={16} color="#db2777" />
-              <Text style={{ fontSize: 16, color: '#831843', fontWeight: '600', marginLeft: 10 }}>Kanduyi Community ICT Hub</Text>
-            </View>
-            <TouchableOpacity style={styles.registerBtn} onPress={() => { if (Platform.OS === 'web') { window.location.href = '/registration'; } else { navigation.navigate('Registration'); } }}>
-              <Text style={styles.registerBtnText}>Register Now</Text>
-            </TouchableOpacity>
-          </FadeInView>
+        {/* ═══ 6. UPCOMING EVENTS ═══ */}
+        <View style={styles.section3D}>
+          <Card3D style={styles.eventCard3D}>
+            <LinearGradient
+              colors={[PINK[50], '#fff']}
+              style={styles.eventCardInner}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.eventTagWrap}>
+                <LinearGradient
+                  colors={[PINK[500], PINK[700]]}
+                  style={styles.eventTag3D}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="megaphone" size={12} color="#fff" />
+                  <Text style={styles.eventTagText}>UPCOMING EVENT</Text>
+                </LinearGradient>
+              </View>
+              <Text style={styles.eventTitle3D}>Youth Empowerment Program 2026</Text>
+              <View style={styles.eventDetailRow}>
+                <View style={[styles.eventDetailIcon, { backgroundColor: PINK[100] }]}>
+                  <Ionicons name="calendar" size={18} color={PINK[600]} />
+                </View>
+                <Text style={styles.eventDetailText}>June 1st – June 30th, 2026</Text>
+              </View>
+              <View style={styles.eventDetailRow}>
+                <View style={[styles.eventDetailIcon, { backgroundColor: PINK[100] }]}>
+                  <Ionicons name="location" size={18} color={PINK[600]} />
+                </View>
+                <Text style={styles.eventDetailText}>Kanduyi Community ICT Hub</Text>
+              </View>
+              <TouchableOpacity onPress={() => { if (Platform.OS === 'web') { window.location.href = '/registration'; } else { navigation.navigate('Registration'); } }}>
+                <LinearGradient
+                  colors={[PINK[600], PINK[800]]}
+                  style={styles.registerBtn3D}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Ionicons name="ticket" size={20} color="#fff" />
+                  <Text style={styles.registerBtnText3D}>Register Now</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </LinearGradient>
+          </Card3D>
         </View>
 
-        {/* 7. Donation & Support */}
-        <View style={[styles.section, { backgroundColor: '#fdf2f8' }]} onLayout={onSectionLayout('difference')}>
+        {/* ═══ 7. DONATION ═══ */}
+        <LinearGradient
+          colors={[PINK[50], PINK[100], PINK[50]]}
+          style={styles.section3D}
+          onLayout={onSectionLayout('difference')}
+        >
           <FadeInView>
-            <Text style={styles.sectionTitleCenter}>Make a Difference</Text>
-            <Text style={styles.donationLead}>Every coin helps break barriers in menstrual health, digital literacy, and climate-conscious solutions.</Text>
+            <Text style={styles.sectionTag3D}>SUPPORT US</Text>
+            <Text style={[styles.sectionTitle3D, { textAlign: 'center' }]}>Make a Difference</Text>
+            <Text style={styles.donationLead3D}>Every coin helps break barriers in menstrual health, digital literacy, and climate-conscious solutions.</Text>
           </FadeInView>
-          <View style={styles.donationGrid}>
-            <FadeInView delay={200} style={styles.donationTierWrapper}>
-              <View style={styles.donationTier}><Text style={styles.tierAmt}>$10</Text><Text style={styles.tierLabel}>Dignity Kit</Text></View>
-            </FadeInView>
-            <FadeInView delay={400} style={styles.donationTierWrapper}>
-              <View style={styles.donationTier}><Text style={styles.tierAmt}>$50</Text><Text style={styles.tierLabel}>ICT Training</Text></View>
-            </FadeInView>
-            <FadeInView delay={600} style={styles.donationTierWrapper}>
-              <View style={styles.donationTier}><Text style={styles.tierAmt}>$100</Text><Text style={styles.tierLabel}>Workshop</Text></View>
-            </FadeInView>
+          <View style={styles.donationGrid3D}>
+            {[
+              { amt: '$10', label: 'Dignity Kit', icon: 'gift', color: PINK[500] },
+              { amt: '$50', label: 'ICT Training', icon: 'school', color: PINK[600] },
+              { amt: '$100', label: 'Workshop', icon: 'account-group', color: PINK[700] },
+            ].map((tier, idx) => (
+              <Card3D key={tier.amt} delay={200 + idx * 200} style={styles.donationTierWrap3D}>
+                <View style={styles.donationTier3D}>
+                  <View style={[styles.donationTierIcon, { backgroundColor: tier.color + '15' }]}>
+                    <MaterialCommunityIcons name={tier.icon} size={28} color={tier.color} />
+                  </View>
+                  <Text style={[styles.tierAmt3D, { color: tier.color }]}>{tier.amt}</Text>
+                  <Text style={styles.tierLabel3D}>{tier.label}</Text>
+                </View>
+              </Card3D>
+            ))}
           </View>
           <FadeInView delay={800}>
-            <TouchableOpacity style={styles.donateLargeBtn} onPress={() => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } }} >
-              <Text style={styles.donateLargeBtnText}>Donate Today</Text>
+            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') { navigation.navigate('Donate'); } }}>
+              <LinearGradient
+                colors={[PINK[500], PINK[700]]}
+                style={styles.donateLargeBtn3D}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="heart" size={22} color="#fff" />
+                <Text style={styles.donateLargeBtnText3D}>Donate Today</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </FadeInView>
-        </View>
+        </LinearGradient>
 
-        {/* 8. Contact Us */}
-        <View style={styles.section} onLayout={onSectionLayout('contact')}>
+        {/* ═══ 8. CONTACT ═══ */}
+        <View style={styles.section3D} onLayout={onSectionLayout('contact')}>
           <FadeInView>
-            <Text style={styles.sectionTitle}>Get In Touch</Text>
+            <Text style={styles.sectionTag3D}>REACH OUT</Text>
+            <Text style={styles.sectionTitle3D}>Get In Touch</Text>
           </FadeInView>
-          <FadeInView delay={200} style={{ alignItems: 'center' }}>
-            <Text style={{ fontSize: 16, color: '#831843', textAlign: 'center', marginBottom: 20 }}>
-              Have questions or want to partner with us? We'd love to hear from you.
-            </Text>
-            <TouchableOpacity style={[styles.sendBtn, { width: '100%' }]} onPress={() => navigation.navigate('SendMessage')}>
-              <Text style={styles.sendBtnText}>Go to Message Page</Text>
+          <Card3D delay={200} style={{ alignItems: 'center', width: '100%' }}>
+            <Text style={styles.contactLead3D}>Have questions or want to partner with us? We'd love to hear from you.</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('SendMessage')} style={{ width: '100%' }}>
+              <LinearGradient
+                colors={[PINK[800], PINK[950]]}
+                style={styles.sendBtn3D}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <Ionicons name="mail" size={20} color="#fff" />
+                <Text style={styles.sendBtnText3D}>Go to Message Page</Text>
+              </LinearGradient>
             </TouchableOpacity>
-          </FadeInView>
-          <FadeInView delay={400} style={styles.contactInfo}>
-            <Text style={styles.contactText}>📍 Kanduyi, Bungoma County, Kenya</Text>
-            <View style={styles.socialRow}>
-              <FontAwesome5 name="linkedin" size={24} color="#831843" />
-              <FontAwesome5 name="instagram" size={24} color="#831843" />
-              <FontAwesome5 name="facebook" size={24} color="#831843" />
+          </Card3D>
+          <FadeInView delay={400} style={styles.contactInfo3D}>
+            <View style={styles.contactLocRow}>
+              <Ionicons name="location" size={20} color={PINK[600]} />
+              <Text style={styles.contactText3D}>Kanduyi, Bungoma County, Kenya</Text>
+            </View>
+            <View style={styles.socialRow3D}>
+              {['linkedin', 'instagram', 'facebook'].map((social) => (
+                <TouchableOpacity key={social} style={styles.socialIcon3D}>
+                  <FontAwesome5 name={social} size={20} color={PINK[700]} />
+                </TouchableOpacity>
+              ))}
             </View>
           </FadeInView>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerCopyright}>© 2026 PINK CYCLE EMPOWERHER INITIATIVE</Text>
-        </View>
+        {/* ═══ FOOTER ═══ */}
+        <LinearGradient
+          colors={[PINK[900], PINK[950]]}
+          style={styles.footer3D}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        >
+          <View style={styles.footerContent3D}>
+            <View style={styles.footerBrand3D}>
+              <LinearGradient
+                colors={[PINK[500], PINK[700]]}
+                style={styles.footerLogoBadge}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.footerLogoText}>PC</Text>
+              </LinearGradient>
+              <Text style={styles.footerBrandName}>Pink Cycle EmpowerHer</Text>
+            </View>
+            <Text style={styles.footerCopyright3D}>© 2026 PINK CYCLE EMPOWERHER INITIATIVE</Text>
+            <Text style={styles.footerTagline3D}>Breaking Barriers. Empowering Futures.</Text>
+          </View>
+        </LinearGradient>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+// ═════════════════════════════════════════════════════════════════════════════
+// ─── 3D PINKY STYLES ────────────────────────────────────────────────────────
+// ═════════════════════════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  navHeader: {
-    height: 60,
+  safeArea: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1 },
+
+  // ─── NAV ───
+  navHeader3D: {
+    height: 70,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderBottomWidth: 1,
-    borderBottomColor: '#fce7f3',
-    backgroundColor: '#fff',
+    borderBottomColor: PINK[100],
     zIndex: 100,
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#831843',
-  },
-  logoAccent: {
-    color: '#db2777',
-  },
-  webNav: {
-    flexDirection: 'row',
-    gap: 20,
-    marginRight: 20,
-  },
-  webNavLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#831843',
-  },
-  container: {
-    flex: 1,
-  },
-  heroSection: {
-    height: 500,
-    backgroundColor: '#000',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    opacity: 0.5,
-    position: 'absolute',
-  },
-  heroOverlay: {
-    padding: 30,
-    justifyContent: 'center',
-    height: '100%',
-  },
-  heroTagline: {
-    color: '#f9a8d4',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  heroTitle: {
-    color: '#fff',
-    fontSize: 42,
-    fontWeight: '900',
-    lineHeight: 50,
-    marginBottom: 30,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: {width: -1, height: 1},
-    textShadowRadius: 10
-  },
-  heroButtons: {
-    flexDirection: 'row',
-    gap: 15,
-    marginBottom: 20,
-    flexWrap: 'wrap',
-  },
-  heroPrimaryBtn: {
-    backgroundColor: '#db2777',
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 8,
-  },
-  heroPrimaryBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  heroSecondaryBtn: {
-    borderWidth: 2,
-    borderColor: '#fff',
-    paddingHorizontal: 25,
-    paddingVertical: 15,
-    borderRadius: 8,
-  },
-  heroSecondaryBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  heroGhostBtn: {
-    marginTop: 10,
-  },
-  heroGhostBtnText: {
-    color: '#fce7f3',
-    fontWeight: '600',
-  },
-  impactBar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    paddingVertical: 30,
-    justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#fce7f3',
-  },
-  statBox: {
-    alignItems: 'center',
-    padding: 10,
-    borderRadius: 15,
-    backgroundColor: '#fff',
-    minWidth: 100,
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 6px rgba(219, 39, 119, 0.1)',
-      },
-    }),
-  },
-  statCount: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#db2777',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#831843',
-    fontWeight: '700',
-    marginTop: 5,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  section: {
-    paddingVertical: 50,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  sectionTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#831843',
-    marginBottom: 25,
-  },
-  sectionTitleCenter: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#831843',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  pillarsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-  },
-  quickLinkWrapper: {
-    width: '48%',
-    marginBottom: 15,
-  },
-  quickLinkBlock: {
-    width: '100%',
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 24,
-    borderWidth: 1,
-    alignItems: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  quickLinkIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  quickLinkTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  missionVisionBox: {
-    gap: 20,
-    marginBottom: 40,
-  },
-  mvItem: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 15,
-    
-    
-  },
-  mvLabel: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: '#db2777',
-    marginBottom: 10,
-  },
-  mvText: {
-    fontSize: 16,
-    color: '#831843',
-    lineHeight: 24,
-  },
-  founderSection: {
-    alignItems: 'center',
-    paddingTop: 20,
-  },
-  founderImagesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 15,
-    marginBottom: 25,
-    flexWrap: 'wrap',
-  },
-  mainFounderImage: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 5,
-    borderColor: '#fff',
-    shadowColor: '#db2777',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  sideFounderImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: '#fff',
-    shadowColor: '#db2777',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  founderImage: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    borderWidth: 6,
-    borderColor: '#fff',
-    marginBottom: 25,
-  },
-  founderTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#831843',
-    marginBottom: 15,
-  },
-  founderQuote: {
-    fontSize: 16,
-    fontStyle: 'italic',
-    color: '#831843',
-    textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 10,
-    marginBottom: 20,
-  },
-  founderName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#db2777',
-  },
-  founderRole: {
-    fontSize: 14,
-    color: '#831843',
-    fontWeight: '600',
-  },
-  valuesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 10,
-    marginTop: 30,
-  },
-  valueBadge: {
-    backgroundColor: '#db2777',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  valueText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  scrollContainer: {
-    paddingLeft: 20,
-    paddingRight: 20,
-    paddingBottom: 20,
-  },
-  youthCard: {
-    width: 320,
-    height: 450,
-    backgroundColor: '#fff',
-    marginRight: 25,
-    borderRadius: 30,
-    overflow: 'hidden',
-    position: 'relative',
-    elevation: 12,
-    shadowColor: '#db2777',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
-    shadowRadius: 15
-  },
-  catalogImage: {
-    width: '100%',
-    height: '100%',
-  },
-  youthBadge: {
-    position: 'absolute',
-    bottom: 25,
-    left: 25,
-    backgroundColor: 'rgba(219, 39, 119, 0.95)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  youthBadgeText: {
-    color: '#fff',
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 1,
-  },
-  catalogSubtitle: {
-    color: '#f9a8d4',
-    textAlign: 'center',
-    marginBottom: 40,
-    fontSize: 16,
-    opacity: 0.9
-  },
-  programCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 25,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#fce7f3',
-    shadowColor: '#db2777',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  programHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 15,
-    marginBottom: 15,
-  },
-  programTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#831843',
-    flex: 1,
-  },
-  programOverview: {
-    fontSize: 15,
-    color: '#831843',
-    lineHeight: 22,
-    opacity: 0.8,
-    marginBottom: 15,
-  },
-  programImpactBadge: {
-    backgroundColor: '#fdf2f8',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  programImpactText: {
-    color: '#db2777',
-    fontWeight: '800',
-    fontSize: 12,
-  },
-  programButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#fce7f3',
-  },
-  programButtonText: {
-    color: '#db2777',
-    fontWeight: '700',
-  },
-  eventCard: {
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    padding: 30,
-    borderWidth: 2,
-    borderColor: '#db2777',
-  },
-  eventTag: {
-    backgroundColor: '#db2777',
-    color: '#fff',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 5,
-    fontSize: 10,
-    fontWeight: '900',
-    marginBottom: 15,
-  },
-  eventTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#831843',
-    marginBottom: 20,
-  },
-  registerBtn: {
-    backgroundColor: '#831843',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  registerBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  donationLead: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#831843',
-    marginBottom: 30,
-    lineHeight: 24,
-  },
-  donationGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-  },
-  donationTierWrapper: {
-    width: '30%',
-  },
-  donationTier: {
-    width: '100%',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 15,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#db2777',
-  },
-  tierAmt: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#db2777',
-  },
-  tierLabel: {
-    fontSize: 10,
-    color: '#831843',
-    fontWeight: '700',
-    marginTop: 5,
-  },
-  donateLargeBtn: {
-    backgroundColor: '#db2777',
-    padding: 20,
-    borderRadius: 15,
-    alignItems: 'center',
-  },
-  donateLargeBtnText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#fce7f3',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#831843',
-  },
-  sendBtn: {
-    backgroundColor: '#831843',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  sendBtnText: {
-    color: '#fff',
-    fontWeight: '800',
-  },
-  contactInfo: {
-    marginTop: 30,
-    alignItems: 'center',
-  },
-  contactText: {
-    color: '#831843',
-    fontWeight: '600',
-    marginBottom: 15,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 30,
-  },
-  footer: {
-    padding: 40,
-    backgroundColor: '#831843',
-    alignItems: 'center',
-  },
-  footerCopyright: {
-    color: '#f9a8d4',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)', boxShadow: '0 4px 30px rgba(236,72,153,0.08)' } : {}),
+  },
+  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoBadge: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  logoBadgeText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+  logoText3D: { fontSize: 18, fontWeight: '900', color: PINK[900] },
+  logoSubtext: { fontSize: 10, fontWeight: '700', color: PINK[500], letterSpacing: 2, textTransform: 'uppercase' },
+  webNav3D: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  navLinkWrap: { paddingHorizontal: 10, paddingVertical: 5 },
+  webNavLink3D: { fontSize: 13, fontWeight: '600', color: PINK[800] },
+  navCTA3D: { marginLeft: 10, borderRadius: 10, overflow: 'hidden' },
+  navCTAGradient: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
+  navCTAText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  menuBtn3D: {
+    width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: PINK[50], borderWidth: 1, borderColor: PINK[200],
+  },
+
+  // ─── HERO ───
+  heroSection3D: { height: 620, backgroundColor: '#000', overflow: 'hidden' },
+  heroImage: { width: '100%', height: '100%', position: 'absolute' },
+  heroOverlay3D: { padding: 30, justifyContent: 'flex-end', height: '100%', paddingBottom: 50 },
+  heroTaglineBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(236,72,153,0.2)', alignSelf: 'flex-start',
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(244,114,182,0.3)',
+  },
+  heroTaglineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: PINK.neon },
+  heroTagline3D: { color: PINK[200], fontSize: 11, fontWeight: '800', letterSpacing: 2 },
+  heroTitle3D: { color: '#fff', fontSize: 44, fontWeight: '900', lineHeight: 52, marginTop: 15, marginBottom: 10 },
+  heroTitleAccent: { color: PINK[300] },
+  heroSubtitle3D: { color: 'rgba(255,255,255,0.8)', fontSize: 16, lineHeight: 24, marginBottom: 25, maxWidth: 500 },
+  heroButtons3D: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', marginBottom: 15 },
+  heroPrimaryBtn3D: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 22, paddingVertical: 14, borderRadius: 12,
+  },
+  heroPrimaryBtnText3D: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  heroGlassBtn3D: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 18, paddingVertical: 12, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(10px)' } : {}),
+  },
+  heroGlassBtnText3D: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  heroExplore3D: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  heroExploreText3D: { color: PINK[300], fontWeight: '600', fontSize: 14 },
+
+  // ─── IMPACT BAR ───
+  impactBar3D: { flexDirection: 'row', paddingVertical: 40, justifyContent: 'space-around', paddingHorizontal: 20 },
+  statBox3D: {
+    alignItems: 'center', padding: 20, borderRadius: 20, minWidth: 110,
+    backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1,
+    borderColor: 'rgba(244,114,182,0.2)',
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(10px)' } : {}),
+  },
+  statGlowRing: {
+    position: 'absolute', top: -5, left: -5, right: -5, bottom: -5,
+    borderRadius: 25, borderWidth: 1, borderColor: PINK[400],
+  },
+  statCount3D: { fontSize: 34, fontWeight: '900', color: '#fff' },
+  statLabel3D: { fontSize: 11, color: PINK[300], fontWeight: '700', marginTop: 5, textTransform: 'uppercase', letterSpacing: 1 },
+
+  // ─── SECTIONS ───
+  section3D: { paddingVertical: 60, paddingHorizontal: 20, backgroundColor: '#fff' },
+  sectionTag3D: {
+    fontSize: 11, fontWeight: '800', color: PINK[500],
+    letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8,
+  },
+  sectionTitle3D: { fontSize: 34, fontWeight: '900', color: PINK[900], marginBottom: 10 },
+  sectionSubtitle3D: { fontSize: 16, color: PINK[700], lineHeight: 24, marginBottom: 35, opacity: 0.8 },
+
+  // ─── PILLARS ───
+  pillarsGrid3D: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 15 },
+  pillarCardWrapper: { width: '48%', marginBottom: 10 },
+  pillarCard3D: {
+    borderRadius: 24, overflow: 'hidden',
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 32px rgba(236,72,153,0.08)', transform: [{ perspective: 800 }] } : { elevation: 4 }),
+  },
+  pillarGradient: { padding: 24, borderRadius: 24, borderWidth: 1, borderColor: PINK[100] },
+  pillarIconWrap: {
+    width: 64, height: 64, borderRadius: 20, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, marginBottom: 16,
+  },
+  pillarTitle3D: { fontSize: 16, fontWeight: '800', marginBottom: 8 },
+  pillarDesc3D: { fontSize: 12, color: PINK[700], lineHeight: 18, opacity: 0.7, marginBottom: 15 },
+  pillarArrow: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+
+  // ─── ABOUT ───
+  missionVisionGrid: { flexDirection: width > 600 ? 'row' : 'column', gap: 20, marginBottom: 40 },
+  mvCardWrap: { flex: 1, minWidth: 260 },
+  mvCard3D: { padding: 30, borderRadius: 24, gap: 15, minHeight: 200 },
+  mvCardOutline3D: {
+    padding: 30, borderRadius: 24, gap: 15, minHeight: 200,
+    borderWidth: 2, borderColor: PINK[200], backgroundColor: '#fff',
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 32px rgba(236,72,153,0.06)' } : { elevation: 3 }),
+  },
+  mvLabel3D: { fontSize: 12, fontWeight: '900', color: '#fff', letterSpacing: 2 },
+  mvText3D: { fontSize: 16, color: '#fff', lineHeight: 24 },
+
+  // ─── FOUNDER ───
+  founderSection3D: { width: '100%' },
+  founderGlass3D: {
+    alignItems: 'center', padding: 40, borderRadius: 30,
+    backgroundColor: PINK[50], borderWidth: 1, borderColor: PINK[200],
+    ...(Platform.OS === 'web' ? { boxShadow: '0 20px 60px rgba(236,72,153,0.08)' } : { elevation: 6 }),
+  },
+  founderImagesRow3D: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 30, flexWrap: 'wrap' },
+  sideImageWrap3D: {
+    ...(Platform.OS === 'web' ? { transform: [{ perspective: 500 }, { rotateY: '8deg' }] } : {}),
+  },
+  mainImageWrap3D: {
+    ...(Platform.OS === 'web' ? { transform: [{ perspective: 800 }, { scale: 1.05 }] } : {}),
+  },
+  mainImageBorder3D: { width: 196, height: 196, borderRadius: 98, justifyContent: 'center', alignItems: 'center' },
+  mainFounderImage3D: { width: 184, height: 184, borderRadius: 92, borderWidth: 4, borderColor: '#fff' },
+  sideFounderImage3D: {
+    width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#fff',
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 24px rgba(236,72,153,0.2)' } : { elevation: 4 }),
+  },
+  founderTitle3D: { fontSize: 24, fontWeight: '900', color: PINK[900], marginBottom: 15 },
+  founderQuote3D: {
+    fontSize: 16, fontStyle: 'italic', color: PINK[800], textAlign: 'center',
+    lineHeight: 28, paddingHorizontal: 15, marginBottom: 20,
+  },
+  founderName3D: { fontSize: 20, fontWeight: '900', color: PINK[600] },
+  founderRole3D: { fontSize: 13, color: PINK[700], fontWeight: '600' },
+
+  // ─── VALUES ───
+  valuesContainer3D: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 35 },
+  valueBadge3D: {},
+  valueBadgeGradient: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 25 },
+  valueText3D: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+  // ─── CATALOG ───
+  catalogSubtitle3D: { color: PINK[300], textAlign: 'left', marginBottom: 30, fontSize: 16, opacity: 0.9, lineHeight: 24 },
+  scrollContainer3D: { paddingLeft: 20, paddingRight: 30, paddingBottom: 20, paddingTop: 10 },
+  youthCard3D: {
+    width: 300, height: 420, marginRight: 20, borderRadius: 24, overflow: 'hidden',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 20px 40px rgba(236,72,153,0.3)',
+      transform: [{ perspective: 1000 }, { rotateY: '-2deg' }],
+    } : { elevation: 12 }),
+  },
+  catalogImage3D: { width: '100%', height: '100%' },
+  youthCardOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%' },
+  youthBadge3D: { position: 'absolute', bottom: 20, left: 20 },
+  youthBadgeGradient: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+  },
+  youthBadgeText3D: { color: '#fff', fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },
+
+  // ─── PROGRAMS ───
+  programCard3D: {
+    marginBottom: 16, borderRadius: 20, overflow: 'hidden',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 8px 32px rgba(236,72,153,0.06)',
+      transform: [{ perspective: 1000 }],
+    } : { elevation: 3 }),
+  },
+  programCardInner: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: PINK[100] },
+  programIconCircle: { marginRight: 18 },
+  programIconGradient: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  programTitle3D: { fontSize: 17, fontWeight: '800', color: PINK[900], marginBottom: 6 },
+  programOverview3D: { fontSize: 13, color: PINK[700], lineHeight: 20, opacity: 0.8, marginBottom: 8 },
+  programImpactBadge3D: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: PINK[50], paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start',
+  },
+  programImpactText3D: { color: PINK[600], fontWeight: '700', fontSize: 11 },
+  programArrow3D: {
+    width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: PINK[50], marginLeft: 10,
+  },
+
+  // ─── EVENTS ───
+  eventCard3D: { width: '100%' },
+  eventCardInner: {
+    padding: 35, borderRadius: 24, borderWidth: 2, borderColor: PINK[200],
+    ...(Platform.OS === 'web' ? { boxShadow: '0 12px 40px rgba(236,72,153,0.08)' } : { elevation: 4 }),
+  },
+  eventTagWrap: { alignSelf: 'flex-start', marginBottom: 20 },
+  eventTag3D: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8,
+  },
+  eventTagText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  eventTitle3D: { fontSize: 28, fontWeight: '900', color: PINK[900], marginBottom: 25 },
+  eventDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  eventDetailIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  eventDetailText: { fontSize: 15, color: PINK[800], fontWeight: '600' },
+  registerBtn3D: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    padding: 18, borderRadius: 14, marginTop: 25,
+  },
+  registerBtnText3D: { color: '#fff', fontSize: 17, fontWeight: '800' },
+
+  // ─── DONATION ───
+  donationLead3D: { textAlign: 'center', fontSize: 16, color: PINK[700], marginBottom: 35, lineHeight: 24, opacity: 0.85 },
+  donationGrid3D: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30, gap: 12 },
+  donationTierWrap3D: { flex: 1 },
+  donationTier3D: {
+    padding: 22, borderRadius: 20, alignItems: 'center', backgroundColor: '#fff',
+    borderWidth: 1, borderColor: PINK[200],
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 24px rgba(236,72,153,0.06)' } : { elevation: 3 }),
+  },
+  donationTierIcon: { width: 56, height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  tierAmt3D: { fontSize: 26, fontWeight: '900' },
+  tierLabel3D: { fontSize: 12, color: PINK[700], fontWeight: '700', marginTop: 5, textTransform: 'uppercase' },
+  donateLargeBtn3D: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    padding: 20, borderRadius: 16,
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 30px rgba(219,39,119,0.3)' } : { elevation: 6 }),
+  },
+  donateLargeBtnText3D: { color: '#fff', fontSize: 20, fontWeight: '800' },
+
+  // ─── CONTACT ───
+  contactLead3D: { fontSize: 16, color: PINK[700], textAlign: 'center', marginBottom: 25, lineHeight: 24 },
+  sendBtn3D: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    padding: 18, borderRadius: 14,
+    ...(Platform.OS === 'web' ? { boxShadow: '0 8px 24px rgba(131,24,67,0.15)' } : { elevation: 4 }),
+  },
+  sendBtnText3D: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  contactInfo3D: { marginTop: 35, alignItems: 'center' },
+  contactLocRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
+  contactText3D: { color: PINK[800], fontWeight: '600', fontSize: 15 },
+  socialRow3D: { flexDirection: 'row', gap: 15 },
+  socialIcon3D: {
+    width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: PINK[50], borderWidth: 1, borderColor: PINK[200],
+    ...(Platform.OS === 'web' ? { boxShadow: '0 4px 12px rgba(236,72,153,0.08)' } : { elevation: 2 }),
+  },
+
+  // ─── FOOTER ───
+  footer3D: { padding: 50 },
+  footerContent3D: { alignItems: 'center', gap: 15 },
+  footerBrand3D: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+  footerLogoBadge: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  footerLogoText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  footerBrandName: { color: PINK[200], fontSize: 16, fontWeight: '700' },
+  footerCopyright3D: { color: PINK[400], fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
+  footerTagline3D: { color: PINK[500], fontSize: 12, fontWeight: '600', fontStyle: 'italic' },
 });
 
 export default PinkCycleHome;

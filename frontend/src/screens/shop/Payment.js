@@ -24,6 +24,7 @@ const Payment = ({ navigation, route }) => {
   const [phoneNumber, setPhoneNumber] = useState("0743192968");
   const [paying, setPaying] = useState(false);
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [paypalLoading, setPaypalLoading] = useState(false);
   const [activeMethod, setActiveMethod] = useState(null);
 
   // Animations
@@ -179,6 +180,70 @@ const Payment = ({ navigation, route }) => {
     }
   };
 
+  const handlePaypal = async () => {
+    try {
+      setPaypalLoading(true);
+      startPulse();
+
+      const orderId = route.params?.checkoutId 
+        ? route.params.checkoutId.replace("chk_", "") 
+        : (paymentData?.order_id || "1");
+      
+      // Call the backend to create a PayPal checkout session
+      const response = await client.post("payment/paypal/create/", {
+        order_id: orderId
+      });
+      
+      if (response.data && response.data.approval_url) {
+        // Redirect to PayPal checkout
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.href = response.data.approval_url;
+        } else {
+          Linking.openURL(response.data.approval_url);
+        }
+      } else {
+        Alert.alert("Payment Error", "Could not initialize PayPal. No approval URL received.");
+      }
+    } catch (error) {
+      console.error("PayPal error:", error);
+      const errMsg = error.response?.data?.detail || "PayPal initialization failed. Please try again.";
+      Alert.alert("Payment Error", errMsg);
+    } finally {
+      setPaypalLoading(false);
+    }
+  };
+
+  const confirmDeleteOrder = () => {
+    Alert.alert(
+      "Cancel Order",
+      "Are you sure you want to cancel and delete this order? This will empty your active checkout session.",
+      [
+        { text: "No", style: "cancel" },
+        { text: "Yes, Cancel Order", style: "destructive", onPress: handleDeleteOrder }
+      ]
+    );
+  };
+
+  const handleDeleteOrder = async () => {
+    try {
+      setLoading(true);
+      const orderId = route.params?.checkoutId 
+        ? route.params.checkoutId.replace("chk_", "") 
+        : (paymentData?.order_id || "1");
+
+      await client.delete(`payment/cancel/?order_id=${orderId}`);
+      
+      Alert.alert("Success", "Your order has been cancelled and deleted.");
+      navigation.navigate("Shop", { screen: "Cart" });
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      const errMsg = error.response?.data?.detail || "Could not delete order. Please try again.";
+      Alert.alert("Error", errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading && !paymentData) {
     return (
       <View style={styles.loadingContainer}>
@@ -297,6 +362,20 @@ const Payment = ({ navigation, route }) => {
             <Text style={styles.totalValue}>{amount}</Text>
           </View>
         </View>
+
+        {hasItems && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity
+              style={styles.cancelOrderBtn}
+              onPress={confirmDeleteOrder}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={16} color="#e53935" style={{ marginRight: 6 }} />
+              <Text style={styles.cancelOrderBtnText}>Cancel & Delete Order</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </Animated.View>
 
       {/* Payment Method Selection Label */}
@@ -355,7 +434,7 @@ const Payment = ({ navigation, route }) => {
             <TouchableOpacity
               style={[styles.payButton, styles.mpesaButton, paying && styles.disabledBtn]}
               onPress={handleMpesa}
-              disabled={paying || stripeLoading}
+              disabled={paying || stripeLoading || paypalLoading}
               activeOpacity={0.8}
             >
               {paying ? (
@@ -425,7 +504,7 @@ const Payment = ({ navigation, route }) => {
             <TouchableOpacity
               style={[styles.payButton, styles.stripeButton, stripeLoading && styles.disabledBtn]}
               onPress={handleStripe}
-              disabled={stripeLoading || paying}
+              disabled={stripeLoading || paying || paypalLoading}
               activeOpacity={0.8}
             >
               {stripeLoading ? (
@@ -439,6 +518,73 @@ const Payment = ({ navigation, route }) => {
                 <>
                   <Ionicons name="lock-closed" size={18} color="white" style={{ marginRight: 10 }} />
                   <Text style={styles.payButtonText}>Pay ${amount} with Card</Text>
+                  <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 10 }} />
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+
+      {/* PayPal Payment */}
+      <Animated.View
+        style={[
+          styles.paymentCard,
+          activeMethod === "paypal" && styles.paymentCardActivePaypal,
+          {
+            opacity: fadeAnim,
+            transform: [
+              { translateY: slideAnim },
+              { scale: activeMethod === "paypal" ? pulseAnim : 1 },
+            ],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.paymentCardHeader}
+          onPress={() => setActiveMethod(activeMethod === "paypal" ? null : "paypal")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.paymentMethodIcon}>
+            <View style={[styles.iconCircle, { backgroundColor: "#0070ba" }]}>
+              <Ionicons name="logo-paypal" size={22} color="#fff" />
+            </View>
+            <View style={{ marginLeft: 12 }}>
+              <Text style={styles.paymentMethodTitle}>PayPal</Text>
+              <Text style={styles.paymentMethodSub}>Pay with PayPal balance or Card</Text>
+            </View>
+          </View>
+          <View style={styles.paypalBadge}>
+            <Text style={styles.paypalBadgeText}>PAYPAL</Text>
+          </View>
+        </TouchableOpacity>
+
+        {activeMethod === "paypal" && (
+          <View style={styles.paymentBody}>
+            <View style={styles.securityNote}>
+              <Ionicons name="lock-closed" size={16} color="#0070ba" />
+              <Text style={styles.securityNoteText}>
+                You will be redirected to PayPal's secure checkout page to complete your payment.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.payButton, styles.paypalButton, paypalLoading && styles.disabledBtn]}
+              onPress={handlePaypal}
+              disabled={paypalLoading || paying || stripeLoading}
+              activeOpacity={0.8}
+            >
+              {paypalLoading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={[styles.payButtonText, { marginLeft: 10 }]}>
+                    Connecting to PayPal...
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Ionicons name="logo-paypal" size={18} color="white" style={{ marginRight: 10 }} />
+                  <Text style={styles.payButtonText}>Pay ${amount} with PayPal</Text>
                   <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 10 }} />
                 </>
               )}
@@ -464,6 +610,18 @@ const Payment = ({ navigation, route }) => {
           <Text style={styles.trustText}>Verified</Text>
         </View>
       </View>
+
+      {/* Cancel Order Button */}
+      {!!(route.params?.checkoutId || paymentData?.order_id) && (
+        <TouchableOpacity
+          style={styles.deleteOrderBtnBottom}
+          onPress={confirmDeleteOrder}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="trash-outline" size={18} color="white" style={{ marginRight: 8 }} />
+          <Text style={styles.deleteOrderBtnBottomText}>Cancel & Delete This Order</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Back Button */}
       <TouchableOpacity
@@ -720,6 +878,11 @@ const styles = StyleSheet.create({
     shadowColor: "#635BFF",
     shadowOpacity: 0.15,
   },
+  paymentCardActivePaypal: {
+    borderColor: "#0070ba",
+    shadowColor: "#0070ba",
+    shadowOpacity: 0.15,
+  },
   paymentCardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -760,6 +923,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   stripeBadgeText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  paypalBadge: {
+    backgroundColor: "#0070ba",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  paypalBadgeText: {
     color: "white",
     fontSize: 10,
     fontWeight: "800",
@@ -850,6 +1025,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#635BFF",
     shadowColor: "#635BFF",
   },
+  paypalButton: {
+    backgroundColor: "#0070ba",
+    shadowColor: "#0070ba",
+  },
   payButtonText: {
     color: "white",
     fontSize: 17,
@@ -858,6 +1037,21 @@ const styles = StyleSheet.create({
   },
   disabledBtn: {
     opacity: 0.7,
+  },
+  cancelOrderBtn: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ffcdd2",
+    backgroundColor: "#ffebee",
+  },
+  cancelOrderBtnText: {
+    color: "#c62828",
+    fontSize: 14,
+    fontWeight: "700",
   },
   loadingRow: {
     flexDirection: "row",
@@ -899,6 +1093,27 @@ const styles = StyleSheet.create({
     color: "#f06292",
     fontWeight: "600",
     fontSize: 15,
+  },
+  deleteOrderBtnBottom: {
+    backgroundColor: "#d32f2f",
+    paddingVertical: 16,
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 10,
+    shadowColor: "#d32f2f",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  deleteOrderBtnBottomText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });
 

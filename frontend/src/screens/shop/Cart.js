@@ -95,7 +95,7 @@ const Cart = ({ navigation }) => {
     <View style={styles.cartCard}>
       <View style={styles.itemInfo}>
         <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemPrice}>{parseFloat(item.price).toFixed(2)} €</Text>
+        <Text style={styles.itemPrice}>{parseFloat(item.price).toFixed(2)} KES</Text>
       </View>
       <View style={styles.actions}>
         <View style={styles.quantityContainer}>
@@ -122,7 +122,7 @@ const Cart = ({ navigation }) => {
       </View>
       <View style={styles.itemTotal}>
         <Text style={styles.totalLabel}>Subtotal:</Text>
-        <Text style={styles.totalValue}>{parseFloat(item.total_price).toFixed(2)} €</Text>
+        <Text style={styles.totalValue}>{parseFloat(item.total_price).toFixed(2)} KES</Text>
       </View>
     </View>
   );
@@ -161,7 +161,7 @@ const Cart = ({ navigation }) => {
             <View style={styles.totalRow}>
               <Text style={styles.grandTotalLabel}>Grand Total:</Text>
               <Text style={styles.grandTotalValue}>
-                {parseFloat(cartData?.total_price || 0).toFixed(2)} €
+                {parseFloat(cartData?.total_price || 0).toFixed(2)} KES
               </Text>
             </View>
             <View style={styles.buttonRow}>

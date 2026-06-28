@@ -13,10 +13,14 @@ const ProductList = ({ navigation }) => {
     try {
       console.log("Fetching all products...");
       const response = await client.get('products/');
-      if (response.data && Array.isArray(response.data)) {
-        setProducts(response.data);
-      } else {
-        console.error("Invalid response format:", response.data);
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          setProducts(response.data);
+        } else if (response.data.results && Array.isArray(response.data.results)) {
+          setProducts(response.data.results);
+        } else {
+          console.error("Invalid response format:", response.data);
+        }
       }
     } catch (error) {
       console.error("Critical Error:", error.message);
@@ -71,7 +75,7 @@ const ProductList = ({ navigation }) => {
               <Card
                 logo={item.image}
                 title={item.name}
-                details={`${item.price} €`}
+                details={`KES ${parseFloat(item.price).toLocaleString()}`}
               />
             </TouchableOpacity>
           )}

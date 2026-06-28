@@ -43,7 +43,7 @@ const ProductDetail = ({ route, navigation }) => {
       <View style={styles.content}>
         <Text style={styles.name}>{product.name}</Text>
         <Text style={styles.category}>{product.category?.name}</Text>
-        <Text style={styles.price}>{product.price} €</Text>
+        <Text style={styles.price}>{product.price} KES</Text>
         <Text style={styles.description}>{product.description}</Text>
 
         <TouchableOpacity style={styles.button} onPress={addToCart}>
