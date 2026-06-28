@@ -48,17 +48,23 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'channels',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 
 ROOT_URLCONF = 'myshop.urls'
 
@@ -141,7 +147,13 @@ USE_X_FORWARDED_PORT = True
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 
 
@@ -152,7 +164,15 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CART_SESSION_ID = 'cart'
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email configuration - using local Postfix SMTP server
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'noreply@pinkcycle.co.ke'
+SERVER_EMAIL = 'noreply@pinkcycle.co.ke'
 
 MPESA_ENVIRONMENT = 'sandbox'
 
@@ -252,20 +272,13 @@ PARLER_LANGUAGES = {
 
 #MEDIA_URL = 'media/'
 #MEDIA_ROOT = BASE_DIR / 'media'
-if DEBUG is True:
-    STATIC_URL = '/static/'
-    STATIC_ROOT = '/static/'
-    STATICFILES_DIRS = [
+STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/venv/myshop/static_root/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/var/www/venv/myshop/media/'
+STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static")
-    ]
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-else:
-    STATIC_URL = '/static/'         
-    STATIC_ROOT = '/var/www/venv/myshop/static/'
-    #MEDIA_URL = '/media/'
-    BASE_DIR / 'media'
-    MEDIA_ROOT = BASE_DIR / 'media'
+]
    # MEDIA_ROOT = Path(BASE_DIR, '/var/www/venv/myshop/media/')
   #  MEDIA_ROOT = os.path.join(BASE_DIR, '/var/www/venv/myshop/media/')
 
