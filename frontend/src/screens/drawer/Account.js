@@ -104,7 +104,7 @@ const Account = ({ navigation }) => {
         }
       }
       
-      if (Platform.OS !== 'web' || (!window.location.search.includes('code=') && !window.location.hash.includes('access_token'))) {
+      if (Platform.OS !== 'web' || (typeof window !== 'undefined' && !window.location.search.includes('code=') && !window.location.hash.includes('access_token'))) {
         await fetchUserData();
       }
     };

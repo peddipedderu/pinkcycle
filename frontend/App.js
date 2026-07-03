@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -66,7 +66,7 @@ const linking = {
     'http://pinkcycle.co.ke',
     'https://pinkcycle.co.ke',
     'http://pinkcycle.hopto.org',
-    window.location.origin,
+    ...(Platform.OS === 'web' && typeof window !== 'undefined' ? [window.location.origin] : []),
   ],
   config: {
     screens: {

@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base URL set specifically to the products endpoint as requested
 const client = axios.create({
-  baseURL: "/api/",
+  baseURL: "https://pinkcycle.co.ke/api/",
   timeout: 10000,
 });
 

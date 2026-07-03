@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pinkcycle",
+    "name": "PinkCycle Shop",
     "slug": "pinkcycle",
     "platforms": [
       "ios",
@@ -23,11 +23,11 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.programwithus.pizzavspizza",
+      "bundleIdentifier": "co.ke.pinkcycle.shop",
       "buildNumber": "1.0.0"
     },
     "android": {
-      "package": "com.programwithus.pizzavspizza",
+      "package": "co.ke.pinkcycle.shop",
       "versionCode": 1
     },
     "web": {
