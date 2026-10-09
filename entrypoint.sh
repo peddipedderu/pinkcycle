@@ -18,7 +18,7 @@ echo "==> Running database migrations..."
 python manage.py migrate --noinput
 
 echo "==> Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear 2>&1 | grep -v "^Found another file" || true
 
-echo "==> Starting Daphne ASGI server on port 8080..."
+echo "==> Static files collected. Starting Daphne ASGI server on 0.0.0.0:8080..."
 exec daphne -b 0.0.0.0 -p 8080 myshop.asgi:application

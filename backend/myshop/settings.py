@@ -288,25 +288,28 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.environ.get('STATIC_ROOT', os.path.join(BASE_DIR, 'staticfiles'))
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
-STATICFILES_DIRS = [
-    d for d in [os.path.join(BASE_DIR, "static")]
-    if os.path.isdir(d)
-]
+
+# Build STATICFILES_DIRS without duplicates
+_static_dirs = []
+_app_static = os.path.join(BASE_DIR, "static")
+if os.path.isdir(_app_static):
+    _static_dirs.append(_app_static)
 
 # Frontend build directory (Expo web build output)
 FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend_build')
 if os.path.isdir(FRONTEND_DIR):
-    # Add frontend_build root for any files at the root
-    STATICFILES_DIRS.append(FRONTEND_DIR)
-    # Add frontend_build/static if it exists, so files are placed directly under staticfiles/
-    frontend_static = os.path.join(FRONTEND_DIR, 'static')
-    if os.path.isdir(frontend_static):
-        STATICFILES_DIRS.append(frontend_static)
+    # Only add frontend_build/static subdir (avoids duplicating Django admin statics)
+    _frontend_static = os.path.join(FRONTEND_DIR, 'static')
+    if os.path.isdir(_frontend_static):
+        _static_dirs.append(_frontend_static)
+    else:
+        # No static/ subdir — add root frontend_build so index.html etc. are found
+        _static_dirs.append(FRONTEND_DIR)
 
-# Whitenoise for efficient static file serving in production
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-   # MEDIA_ROOT = Path(BASE_DIR, '/var/www/venv/myshop/media/')
-  #  MEDIA_ROOT = os.path.join(BASE_DIR, '/var/www/venv/myshop/media/')
+STATICFILES_DIRS = _static_dirs
+
+# Use simple StaticFilesStorage — avoids strict manifest hash errors from duplicate files
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 if REDIS_URL:
     CHANNEL_LAYERS = {

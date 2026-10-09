@@ -21,6 +21,13 @@ console_command = '/code/backend/manage.py shell'
     hard_limit = 50
     soft_limit = 35
 
+  [[http_service.checks]]
+    grace_period = '30s'
+    interval = '15s'
+    method = 'GET'
+    path = '/'
+    timeout = '10s'
+
 [mounts]
   source = 'pinkcycle_data'
   destination = '/data'
