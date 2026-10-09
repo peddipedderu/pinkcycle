@@ -20,14 +20,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = (
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
     'django-insecure-+(@clydi&^06dxoa98e^xudb%cuw)!ju=!j-kxww^!g%jq1&v9'
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-#ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.fly.dev,pinkcycle.co.ke,.pinkcycle.co.ke,localhost,127.0.0.1').split(',')
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://pinkcycle.fly.dev,https://pinkcycle.co.ke').split(',')
 
 
 # Application definition
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,14 +150,23 @@ USE_X_FORWARDED_PORT = True
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-    }
-}
+REDIS_URL = os.environ.get('REDIS_URL', '')
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
+    }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 
 MEDIA_URL = 'media/'
@@ -241,8 +253,8 @@ except ImportError:
 
 
 # Redis settings
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 REDIS_DB = 1
 
 
@@ -273,20 +285,41 @@ PARLER_LANGUAGES = {
 #MEDIA_URL = 'media/'
 #MEDIA_ROOT = BASE_DIR / 'media'
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/venv/myshop/static_root/'
+STATIC_ROOT = os.environ.get('STATIC_ROOT', os.path.join(BASE_DIR, 'staticfiles'))
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/venv/myshop/media/'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static")
+    d for d in [os.path.join(BASE_DIR, "static")]
+    if os.path.isdir(d)
 ]
+
+# Frontend build directory (Expo web build output)
+FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend_build')
+if os.path.isdir(FRONTEND_DIR):
+    # Add frontend_build root for any files at the root
+    STATICFILES_DIRS.append(FRONTEND_DIR)
+    # Add frontend_build/static if it exists, so files are placed directly under staticfiles/
+    frontend_static = os.path.join(FRONTEND_DIR, 'static')
+    if os.path.isdir(frontend_static):
+        STATICFILES_DIRS.append(frontend_static)
+
+# Whitenoise for efficient static file serving in production
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
    # MEDIA_ROOT = Path(BASE_DIR, '/var/www/venv/myshop/media/')
   #  MEDIA_ROOT = os.path.join(BASE_DIR, '/var/www/venv/myshop/media/')
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [(REDIS_HOST, REDIS_PORT)],
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [REDIS_URL],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }

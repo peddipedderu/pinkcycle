@@ -2,9 +2,18 @@ import axios from "axios";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Base URL set specifically to the products endpoint as requested
+// Dynamically determine API base URL
+const getBaseURL = () => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // On web, use relative URL so it works on any domain
+    return '/api/';
+  }
+  // For native apps, use the production URL
+  return 'https://pinkcycle-wandering-lagoon-7811.fly.dev/api/';
+};
+
 const client = axios.create({
-  baseURL: "https://pinkcycle.co.ke/api/",
+  baseURL: getBaseURL(),
   timeout: 10000,
 });
 

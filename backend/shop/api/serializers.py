@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from shop.models import Category, Product, Blog, Comment, SocialMedia, ProgramCategory, Program, Message, Booking, ProgramEnrollment, Session, Donation
+from shop.models import (
+    Category, Product, Blog, Comment, SocialMedia, ProgramCategory, Program,
+    Message, Booking, ProgramEnrollment, Session, Donation,
+    Brand, Tag, ProductImage, ProductVariant, Review, Wishlist, Coupon, ShippingZone
+)
 from orders.models import Order, OrderItem
 from decimal import Decimal
 from django.contrib.auth.models import User
@@ -168,3 +172,63 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password']
     def create(self, val):
         return User.objects.create_user(**val)
+
+
+class ProductListSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    discount_percentage = serializers.ReadOnlyField()
+    average_rating = serializers.ReadOnlyField()
+    review_count = serializers.ReadOnlyField()
+    class Meta:
+        model = Product
+        fields = ['id', 'category', 'name', 'slug', 'image', 'short_description',
+                  'price', 'original_price', 'available', 'condition',
+                  'is_featured', 'is_bestseller', 'is_new_arrival',
+                  'discount_percentage', 'average_rating', 'review_count', 'created']
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.image:
+            rep['image'] = instance.image.url
+        return rep
+
+
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name', 'slug', 'logo', 'description', 'website']
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['id', 'name', 'slug']
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Review
+        fields = ['id', 'product', 'user', 'name', 'email', 'rating', 'title',
+                  'body', 'verified_purchase', 'helpful_votes', 'created', 'is_approved']
+        read_only_fields = ['verified_purchase', 'helpful_votes', 'is_approved']
+
+
+class WishlistSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    class Meta:
+        model = Wishlist
+        fields = ['id', 'user', 'product', 'added_at']
+        read_only_fields = ['user']
+
+
+class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = ['id', 'code', 'discount_type', 'discount_value',
+                  'min_order_amount', 'valid_from', 'valid_to', 'is_active', 'description']
+
+
+class ShippingZoneSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingZone
+        fields = ['id', 'name', 'regions', 'base_rate', 'per_kg_rate', 'estimated_days']

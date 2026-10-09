@@ -66,6 +66,7 @@ const linking = {
     'http://pinkcycle.co.ke',
     'https://pinkcycle.co.ke',
     'http://pinkcycle.hopto.org',
+    'https://pinkcycle-wandering-lagoon-7811.fly.dev',
     ...(Platform.OS === 'web' && typeof window !== 'undefined' ? [window.location.origin] : []),
   ],
   config: {

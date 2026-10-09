@@ -19,16 +19,22 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from .spa_views import serve_react_app, serve_media
 
 urlpatterns = [
+    # Admin panel
     path('admin/', admin.site.urls),
-    path('cart/', include('cart.urls', namespace='cart')),
-    path('payment/', include('payment.urls', namespace='payment')),
-    path('orders/', include('orders.urls', namespace='orders')),
+
+    # API routes (these must come before the SPA catch-all)
     path('', include('shop.api.urls', namespace='api')),
-    path('', include('shop.urls', namespace='shop')),
-#    path('api/', include('cart.urls')),
+
+    # Media files in production
+    re_path(r'^media/(?P<path>.*)$', serve_media, name='serve_media'),
+
+    # React SPA catch-all: all other routes are handled by the React frontend
+    # This MUST be last so API and admin routes are matched first
+    re_path(r'^(?!api/|admin/|static/|media/).*$', serve_react_app, name='spa'),
 ]
 
 if settings.DEBUG:

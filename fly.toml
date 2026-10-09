@@ -1,0 +1,35 @@
+app = 'pinkcycle'
+primary_region = 'jnb'
+console_command = '/code/backend/manage.py shell'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  PORT = '8080'
+  PYTHONUNBUFFERED = '1'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 50
+    soft_limit = 35
+
+[mounts]
+  source = 'pinkcycle_data'
+  destination = '/data'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
+
+[[statics]]
+  guest_path = '/code/backend/staticfiles'
+  url_prefix = '/static/'
